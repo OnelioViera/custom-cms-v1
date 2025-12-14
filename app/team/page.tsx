@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { getDatabase } from '@/lib/mongodb';
 import { TeamMember } from '@/lib/models/Content';
 import { Mail, Phone, Linkedin } from 'lucide-react';
@@ -53,11 +54,17 @@ export default async function TeamPage() {
                 >
                   {/* Profile Image */}
                   {member.image ? (
-                    <img
-                      src={member.image}
-                      alt={member.name}
-                      className="aspect-square object-cover w-full"
-                    />
+                    <div className="aspect-square relative overflow-hidden">
+                      <Image
+                        src={member.image}
+                        alt={member.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        placeholder="blur"
+                        blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2U1ZTdlYiIvPgo8L3N2Zz4="
+                      />
+                    </div>
                   ) : (
                     <div className="aspect-square bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
                       <span className="text-white text-4xl font-bold">
