@@ -146,7 +146,7 @@ export default function ServicesPage() {
                 </TableRow>
               ) : (
                 filteredServices.map((service) => (
-                <TableRow key={service._id}>
+                <TableRow key={service._id?.toString()}>
                   <TableCell className="font-medium">{service.title}</TableCell>
                   <TableCell className="text-gray-600 max-w-md truncate">
                     {service.shortDescription}

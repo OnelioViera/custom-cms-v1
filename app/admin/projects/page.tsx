@@ -160,7 +160,7 @@ export default function ProjectsPage() {
                 </TableRow>
               ) : (
                 filteredProjects.map((project) => (
-                <TableRow key={project._id}>
+                <TableRow key={project._id?.toString()}>
                   <TableCell className="font-medium">{project.title}</TableCell>
                   <TableCell className="text-gray-600">{project.client || '-'}</TableCell>
                   <TableCell>

@@ -147,7 +147,7 @@ export default function TeamPage() {
                 </TableRow>
               ) : (
                 filteredMembers.map((member) => (
-                <TableRow key={member._id}>
+                <TableRow key={member._id?.toString()}>
                   <TableCell className="font-medium">{member.name}</TableCell>
                   <TableCell className="text-gray-600">{member.position}</TableCell>
                   <TableCell className="text-gray-600">{member.email || '-'}</TableCell>

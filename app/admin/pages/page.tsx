@@ -152,7 +152,7 @@ export default function PagesPage() {
               </TableRow>
             ) : (
               paginatedPages.map((page) => (
-                <TableRow key={page._id}>
+                <TableRow key={page._id?.toString()}>
                   <TableCell className="font-medium">{page.title}</TableCell>
                   <TableCell>
                     <code className="text-sm bg-gray-100 px-2 py-1 rounded">
