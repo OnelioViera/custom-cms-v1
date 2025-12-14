@@ -111,7 +111,7 @@ export default function ProjectsPage() {
     return projects.filter(project => 
       project.title.toLowerCase().includes(query) ||
       project.client?.toLowerCase().includes(query) ||
-      project.content?.toLowerCase().includes(query)
+      (project as any).content?.toLowerCase().includes(query)
     );
   }, [projects, searchQuery]);
 
