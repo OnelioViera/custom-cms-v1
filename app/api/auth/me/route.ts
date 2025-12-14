@@ -28,8 +28,10 @@ export async function GET() {
 
     // Get user from database
     const db = await getDatabase();
-    const usersCollection = db.collection<User>('users');
-    const user = await usersCollection.findOne({ _id: new ObjectId(payload.userId) });
+    const usersCollection = db.collection('users');
+    const user = await usersCollection.findOne({ 
+      _id: new ObjectId(payload.userId) 
+    });
 
     if (!user) {
       return NextResponse.json({
