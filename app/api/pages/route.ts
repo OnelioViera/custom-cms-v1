@@ -7,10 +7,11 @@ export async function GET() {
   try {
     const db = await getDatabase();
     const pagesCollection = db.collection<Page>('pages');
-    
+
+    // Use index for filtering and sorting
     const pages = await pagesCollection
-      .find({})
-      .sort({ updatedAt: -1 })
+      .find({ status: 'published' })
+      .sort({ createdAt: -1 })
       .toArray();
 
     return NextResponse.json({
@@ -22,10 +23,10 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Error fetching pages:', error);
-    return NextResponse.json({
-      success: false,
-      message: 'Failed to fetch pages'
-    }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: 'Failed to fetch pages' },
+      { status: 500 }
+    );
   }
 }
 
