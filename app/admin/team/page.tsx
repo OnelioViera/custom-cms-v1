@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import SearchInput from '@/components/admin/SearchInput';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -41,6 +42,7 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchMembers();
@@ -88,6 +90,18 @@ export default function TeamPage() {
     }
   };
 
+  // Filter team members based on search query
+  const filteredMembers = useMemo(() => {
+    if (!searchQuery.trim()) return members;
+
+    const query = searchQuery.toLowerCase();
+    return members.filter(member => 
+      member.name.toLowerCase().includes(query) ||
+      member.position.toLowerCase().includes(query) ||
+      member.email?.toLowerCase().includes(query)
+    );
+  }, [members, searchQuery]);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -101,13 +115,17 @@ export default function TeamPage() {
         </Button>
       </div>
 
+      {/* Search Bar */}
+      <div className="mb-6 max-w-md">
+        <SearchInput
+          placeholder="Search team members by name, position, or email..."
+          onSearch={setSearchQuery}
+        />
+      </div>
+
       <div className="bg-white rounded-lg border">
         {loading ? (
           <div className="p-8 text-center">Loading...</div>
-        ) : members.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            No team members yet. Add your first team member!
-          </div>
         ) : (
           <Table>
             <TableHeader>
@@ -121,7 +139,14 @@ export default function TeamPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {members.map((member) => (
+              {filteredMembers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    {searchQuery ? 'No team members found matching your search.' : 'No team members yet. Add your first team member!'}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredMembers.map((member) => (
                 <TableRow key={member._id}>
                   <TableCell className="font-medium">{member.name}</TableCell>
                   <TableCell className="text-gray-600">{member.position}</TableCell>
@@ -151,7 +176,8 @@ export default function TeamPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                ))
+              )}
             </TableBody>
           </Table>
         )}

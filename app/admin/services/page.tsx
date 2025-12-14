@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import SearchInput from '@/components/admin/SearchInput';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -41,6 +42,7 @@ export default function ServicesPage() {
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchServices();
@@ -88,6 +90,18 @@ export default function ServicesPage() {
     }
   };
 
+  // Filter services based on search query
+  const filteredServices = useMemo(() => {
+    if (!searchQuery.trim()) return services;
+
+    const query = searchQuery.toLowerCase();
+    return services.filter(service => 
+      service.title.toLowerCase().includes(query) ||
+      service.shortDescription.toLowerCase().includes(query) ||
+      service.fullDescription.toLowerCase().includes(query)
+    );
+  }, [services, searchQuery]);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -101,13 +115,17 @@ export default function ServicesPage() {
         </Button>
       </div>
 
+      {/* Search Bar */}
+      <div className="mb-6 max-w-md">
+        <SearchInput
+          placeholder="Search services by title or description..."
+          onSearch={setSearchQuery}
+        />
+      </div>
+
       <div className="bg-white rounded-lg border">
         {loading ? (
           <div className="p-8 text-center">Loading...</div>
-        ) : services.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            No services yet. Add your first service!
-          </div>
         ) : (
           <Table>
             <TableHeader>
@@ -120,7 +138,14 @@ export default function ServicesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {services.map((service) => (
+              {filteredServices.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                    {searchQuery ? 'No services found matching your search.' : 'No services yet. Create your first service!'}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredServices.map((service) => (
                 <TableRow key={service._id}>
                   <TableCell className="font-medium">{service.title}</TableCell>
                   <TableCell className="text-gray-600 max-w-md truncate">
@@ -151,7 +176,8 @@ export default function ServicesPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                ))
+              )}
             </TableBody>
           </Table>
         )}

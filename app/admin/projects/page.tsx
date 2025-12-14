@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import SearchInput from '@/components/admin/SearchInput';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -41,6 +42,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchProjects();
@@ -101,6 +103,18 @@ export default function ProjectsPage() {
     }
   };
 
+  // Filter projects based on search query
+  const filteredProjects = useMemo(() => {
+    if (!searchQuery.trim()) return projects;
+
+    const query = searchQuery.toLowerCase();
+    return projects.filter(project => 
+      project.title.toLowerCase().includes(query) ||
+      project.client?.toLowerCase().includes(query) ||
+      project.description.toLowerCase().includes(query)
+    );
+  }, [projects, searchQuery]);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -114,13 +128,17 @@ export default function ProjectsPage() {
         </Button>
       </div>
 
+      {/* Search Bar */}
+      <div className="mb-6 max-w-md">
+        <SearchInput
+          placeholder="Search projects by title, client, or description..."
+          onSearch={setSearchQuery}
+        />
+      </div>
+
       <div className="bg-white rounded-lg border">
         {loading ? (
           <div className="p-8 text-center">Loading...</div>
-        ) : projects.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            No projects yet. Create your first project!
-          </div>
         ) : (
           <Table>
             <TableHeader>
@@ -134,7 +152,14 @@ export default function ProjectsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {projects.map((project) => (
+              {filteredProjects.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    {searchQuery ? 'No projects found matching your search.' : 'No projects yet. Create your first project!'}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredProjects.map((project) => (
                 <TableRow key={project._id}>
                   <TableCell className="font-medium">{project.title}</TableCell>
                   <TableCell className="text-gray-600">{project.client || '-'}</TableCell>
@@ -168,7 +193,8 @@ export default function ProjectsPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                ))
+              )}
             </TableBody>
           </Table>
         )}
