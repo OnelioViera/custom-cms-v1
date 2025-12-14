@@ -137,7 +137,7 @@ export default function PagesPage() {
 
     try {
       const updatePromises = selectedIds.map(async (id) => {
-        const page = pages.find(p => p._id === id);
+        const page = pages.find(p => p._id?.toString() === id);
         if (!page) return;
 
         return fetch(`/api/pages/${id}`, {

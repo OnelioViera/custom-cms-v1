@@ -172,7 +172,7 @@ export default function TeamPage() {
 
     try {
       const updatePromises = selectedIds.map(async (id) => {
-        const member = members.find(m => m._id === id);
+        const member = members.find(m => m._id?.toString() === id);
         if (!member) return;
 
         return fetch(`/api/team/${id}`, {

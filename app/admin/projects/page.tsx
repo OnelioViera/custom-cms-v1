@@ -171,7 +171,7 @@ export default function ProjectsPage() {
 
     try {
       const updatePromises = selectedIds.map(async (id) => {
-        const project = projects.find(p => p._id === id);
+        const project = projects.find(p => p._id?.toString() === id);
         if (!project) return;
 
         return fetch(`/api/projects/${id}`, {
@@ -201,7 +201,7 @@ export default function ProjectsPage() {
 
     try {
       const updatePromises = selectedIds.map(async (id) => {
-        const project = projects.find(p => p._id === id);
+        const project = projects.find(p => p._id?.toString() === id);
         if (!project) return;
 
         return fetch(`/api/projects/${id}`, {

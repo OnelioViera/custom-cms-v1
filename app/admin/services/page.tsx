@@ -172,7 +172,7 @@ export default function ServicesPage() {
 
     try {
       const updatePromises = selectedIds.map(async (id) => {
-        const service = services.find(s => s._id === id);
+        const service = services.find(s => s._id?.toString() === id);
         if (!service) return;
 
         return fetch(`/api/services/${id}`, {
