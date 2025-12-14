@@ -169,7 +169,7 @@ export default function ServicesPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => openDeleteDialog(service._id)}
+                        onClick={() => openDeleteDialog(service._id?.toString() || '')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

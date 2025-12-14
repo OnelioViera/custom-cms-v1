@@ -186,7 +186,7 @@ export default function ProjectsPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => openDeleteDialog(project._id)}
+                        onClick={() => openDeleteDialog(project._id?.toString() || '')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

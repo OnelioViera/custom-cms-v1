@@ -177,7 +177,7 @@ export default function PagesPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setDeleteId(page._id || null)}
+                        onClick={() => setDeleteId(page._id?.toString() || null)}
                       >
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </Button>

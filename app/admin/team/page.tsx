@@ -169,7 +169,7 @@ export default function TeamPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => openDeleteDialog(member._id)}
+                        onClick={() => openDeleteDialog(member._id?.toString() || '')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
