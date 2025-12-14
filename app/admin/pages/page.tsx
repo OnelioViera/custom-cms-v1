@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import { Page } from '@/lib/models/Content';
 import SearchInput from '@/components/admin/SearchInput';
 import Pagination from '@/components/admin/Pagination';
+import TableSkeleton from '@/components/admin/skeletons/TableSkeleton';
 
 export default function PagesPage() {
   const [pages, setPages] = useState<Page[]>([]);
@@ -106,7 +107,20 @@ export default function PagesPage() {
   const totalPages = Math.ceil(filteredPages.length / itemsPerPage);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">Pages</h1>
+            <p className="text-gray-600 mt-1">Manage your website pages</p>
+          </div>
+        </div>
+        <div className="mb-6 max-w-md">
+          <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <TableSkeleton rows={10} columns={5} />
+      </div>
+    );
   }
 
   return (

@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import SearchInput from '@/components/admin/SearchInput';
+import TableSkeleton from '@/components/admin/skeletons/TableSkeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -102,6 +103,23 @@ export default function TeamPage() {
     );
   }, [members, searchQuery]);
 
+  if (loading) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">Team Members</h1>
+            <p className="text-gray-600 mt-1">Manage your team</p>
+          </div>
+        </div>
+        <div className="mb-6 max-w-md">
+          <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <TableSkeleton rows={10} columns={6} />
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -124,10 +142,7 @@ export default function TeamPage() {
       </div>
 
       <div className="bg-white rounded-lg border">
-        {loading ? (
-          <div className="p-8 text-center">Loading...</div>
-        ) : (
-          <Table>
+        <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -180,7 +195,6 @@ export default function TeamPage() {
               )}
             </TableBody>
           </Table>
-        )}
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
