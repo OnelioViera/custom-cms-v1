@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     },
     {
       interval: 60 * 60 * 1000, // 1 hour
-      maxRequests: 20, // 20 uploads per hour
+      maxRequests: process.env.NODE_ENV === 'development' ? 100 : 20,
     }
   );
 }

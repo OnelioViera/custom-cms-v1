@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     },
     {
       interval: 15 * 60 * 1000, // 15 minutes
-      maxRequests: 5, // 5 login attempts per 15 minutes
+      maxRequests: process.env.NODE_ENV === 'development' ? 50 : 5,
     }
   );
 }
