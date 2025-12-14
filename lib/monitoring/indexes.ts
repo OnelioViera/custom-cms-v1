@@ -4,8 +4,6 @@ interface IndexReport {
   indexCount: number;
   indexes: string[];
   documentCount: number;
-  avgDocSize: number;
-  storageSize: number;
 }
 
 interface QueryPerformanceResult {
@@ -13,6 +11,17 @@ interface QueryPerformanceResult {
   documentsExamined: number;
   documentsReturned: number;
   indexUsed: string;
+}
+
+interface ExecutionStages {
+  indexName?: string;
+}
+
+interface ExecutionStats {
+  executionTimeMillis?: number;
+  totalDocsExamined?: number;
+  nReturned?: number;
+  executionStages?: ExecutionStages;
 }
 
 export async function checkIndexes(): Promise<Record<string, IndexReport>> {
@@ -24,14 +33,12 @@ export async function checkIndexes(): Promise<Record<string, IndexReport>> {
   for (const collectionName of collections) {
     const collection = db.collection(collectionName);
     const indexes = await collection.indexes();
-    const stats = await collection.stats();
+    const documentCount = await collection.countDocuments();
     
     report[collectionName] = {
       indexCount: indexes.length,
       indexes: indexes.map((i: { name: string }) => i.name),
-      documentCount: stats.count,
-      avgDocSize: stats.avgObjSize,
-      storageSize: stats.storageSize,
+      documentCount,
     };
   }
 
@@ -47,11 +54,12 @@ export async function analyzeQueryPerformance(
   
   // Use explain to analyze query performance
   const explanation = await collection.find(query).explain('executionStats');
+  const executionStats = (explanation.executionStats as ExecutionStats) || {};
   
   return {
-    executionTime: explanation.executionStats.executionTimeMillis,
-    documentsExamined: explanation.executionStats.totalDocsExamined,
-    documentsReturned: explanation.executionStats.nReturned,
-    indexUsed: explanation.executionStats.executionStages?.indexName || 'collection scan',
+    executionTime: executionStats.executionTimeMillis || 0,
+    documentsExamined: executionStats.totalDocsExamined || 0,
+    documentsReturned: executionStats.nReturned || 0,
+    indexUsed: executionStats.executionStages?.indexName || 'collection scan',
   };
 }
