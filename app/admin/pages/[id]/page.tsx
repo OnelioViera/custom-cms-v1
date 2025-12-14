@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Eye } from 'lucide-react';
 import RichTextEditor from '@/components/admin/RichTextEditor';
 
 export default function EditPagePage() {
@@ -194,6 +195,12 @@ export default function EditPagePage() {
               <Save className="w-4 h-4 mr-2" />
               {loading ? 'Saving...' : 'Save Changes'}
             </Button>
+            <Link href={`/preview/page/${params.id}`} target="_blank">
+              <Button type="button" variant="outline">
+                <Eye className="w-4 h-4 mr-2" />
+                Preview
+              </Button>
+            </Link>
             <Button
               type="button"
               variant="outline"
