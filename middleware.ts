@@ -4,54 +4,67 @@ import { verifyTokenEdge } from './lib/auth-edge';
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  console.log('Middleware - Path:', path);
 
-  // Define protected routes
-  const isAdminRoute = path.startsWith('/admin') && path !== '/admin/login';
+  // Create response
+  let response = NextResponse.next();
+
+  // Add security headers
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
+  // Check if path starts with /admin
+  const isAdminRoute = path.startsWith('/admin') && 
+                       !path.startsWith('/admin/login') && 
+                       !path.startsWith('/admin/setup') &&
+                       !path.startsWith('/admin/reset-password');
 
   // Get token from cookies
   const token = request.cookies.get('auth-token')?.value;
-
-  console.log('Middleware - Path:', path);
   console.log('Middleware - Token exists:', !!token);
   console.log('Middleware - Is admin route:', isAdminRoute);
 
-  // If trying to access admin route without token, redirect to login
+  // If admin route and no token, redirect to login
   if (isAdminRoute && !token) {
     console.log('Middleware - Redirecting to login (no token)');
     return NextResponse.redirect(new URL('/admin/login', request.url));
   }
 
-  // If has token, verify it
+  // If admin route with token, verify it
   if (isAdminRoute && token) {
-    const payload = await verifyTokenEdge(token);
-    
-    console.log('Middleware - Token payload:', payload);
-    
-    // If token is invalid, redirect to login
-    if (!payload) {
+    const verified = await verifyTokenEdge(token);
+    console.log('Middleware - Token verified:', !!verified);
+
+    if (!verified) {
       console.log('Middleware - Redirecting to login (invalid token)');
-      const response = NextResponse.redirect(new URL('/admin/login', request.url));
-      response.cookies.delete('auth-token');
-      return response;
+      const loginResponse = NextResponse.redirect(new URL('/admin/login', request.url));
+      loginResponse.cookies.delete('auth-token');
+      return loginResponse;
     }
+
+    console.log('Middleware - Token payload:', verified);
   }
 
-  // If already logged in and trying to access login page, redirect to dashboard
+  // If on login page with valid token, redirect to dashboard
   if (path === '/admin/login' && token) {
-    const payload = await verifyTokenEdge(token);
-    console.log('Middleware - On login page with token, payload:', payload);
-    if (payload) {
+    const verified = await verifyTokenEdge(token);
+    console.log('Middleware - On login page with token, payload:', verified);
+
+    if (verified) {
       console.log('Middleware - Redirecting to dashboard (already logged in)');
       return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     }
   }
 
   console.log('Middleware - Allowing request');
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
   matcher: [
     '/admin/:path*',
+    '/api/:path*',
   ],
 };
