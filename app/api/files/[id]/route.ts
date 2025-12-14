@@ -5,7 +5,7 @@ import { ObjectId } from 'mongodb';
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+): Promise<NextResponse> {
   try {
     const { id } = await params;
     
@@ -33,7 +33,7 @@ export async function GET(
     // Convert stream to buffer
     const chunks: Buffer[] = [];
     
-    return new Promise((resolve, reject) => {
+    return new Promise<NextResponse>((resolve, reject) => {
       downloadStream.on('data', (chunk) => chunks.push(chunk));
       downloadStream.on('error', reject);
       downloadStream.on('end', () => {
