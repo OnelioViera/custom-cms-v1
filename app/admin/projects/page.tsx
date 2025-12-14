@@ -111,7 +111,7 @@ export default function ProjectsPage() {
     return projects.filter(project => 
       project.title.toLowerCase().includes(query) ||
       project.client?.toLowerCase().includes(query) ||
-      project.description.toLowerCase().includes(query)
+      project.content?.toLowerCase().includes(query)
     );
   }, [projects, searchQuery]);
 
@@ -131,7 +131,7 @@ export default function ProjectsPage() {
       {/* Search Bar */}
       <div className="mb-6 max-w-md">
         <SearchInput
-          placeholder="Search projects by title, client, or description..."
+          placeholder="Search projects by title, client, or content..."
           onSearch={setSearchQuery}
         />
       </div>
