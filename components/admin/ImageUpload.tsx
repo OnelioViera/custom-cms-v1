@@ -79,15 +79,11 @@ export default function ImageUpload({
       {preview ? (
         <div className="relative group">
           <div className="w-full h-64 bg-gray-100 rounded-lg border-2 border-gray-300 overflow-hidden flex items-center justify-center p-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={preview}
               alt="Preview"
-              style={{ 
-                maxWidth: '100%', 
-                maxHeight: '100%', 
-                objectFit: 'contain',
-                display: 'block'
-              }}
+              className="max-w-full max-h-full object-contain block"
               onError={() => toast.error('Failed to load image')}
             />
           </div>

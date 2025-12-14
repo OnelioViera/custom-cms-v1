@@ -22,8 +22,6 @@ export async function GET(
       return new NextResponse('File not found', { status: 404 });
     }
 
-    console.log('File found, content type:', file.contentType);
-
     // Get GridFS bucket
     const bucket = await getGridFSBucket();
     
@@ -39,8 +37,8 @@ export async function GET(
       downloadStream.on('end', () => {
         const buffer = Buffer.concat(chunks);
         
-        // Use the stored contentType from metadata, fallback to image/jpeg
-        const contentType = file.contentType || file.metadata?.contentType || 'image/jpeg';
+        // Access contentType from metadata or use fallback
+        const contentType = (file as any).contentType || file.metadata?.contentType || 'image/jpeg';
         
         console.log('Serving with Content-Type:', contentType);
         
