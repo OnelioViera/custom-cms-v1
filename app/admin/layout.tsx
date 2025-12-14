@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider, useAuth } from '@/lib/contexts/AuthContext';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { 
   LayoutDashboard, 
   FileText, 
@@ -107,7 +108,9 @@ function AdminLayoutContent({
       {/* Main Content */}
       <div className="pl-64">
         <main className="p-8">
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </main>
       </div>
     </div>

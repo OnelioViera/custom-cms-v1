@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import PublicLayoutCheck from "@/components/layout/PublicLayoutCheck";
+import ErrorBoundary from '@/components/ErrorBoundary';
+import { Toaster } from '@/components/ui/sonner';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,7 +20,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <PublicLayoutCheck>{children}</PublicLayoutCheck>
+        <Toaster position="top-right" />
+        <ErrorBoundary>
+          <PublicLayoutCheck>{children}</PublicLayoutCheck>
+        </ErrorBoundary>
       </body>
     </html>
   );
