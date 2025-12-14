@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -91,6 +92,33 @@ export default function EditTeamMemberPage() {
       setLoading(false);
     }
   };
+
+  // Keyboard shortcut: Ctrl+S to save
+  const handleSaveShortcut = useCallback((e: KeyboardEvent) => {
+    if (!loading) {
+      const form = document.querySelector('form');
+      if (form) {
+        form.requestSubmit();
+      }
+    }
+  }, [loading]);
+
+  useKeyboardShortcut(
+    { key: 's', ctrl: true, preventDefault: true },
+    handleSaveShortcut,
+    [loading]
+  );
+
+  // Keyboard shortcut: Escape to cancel
+  useKeyboardShortcut(
+    { key: 'Escape', preventDefault: false },
+    () => {
+      if (!loading) {
+        router.push('/admin/team');
+      }
+    },
+    [loading, router]
+  );
 
   if (fetching) {
     return (
@@ -242,6 +270,7 @@ export default function EditTeamMemberPage() {
             <Button type="submit" disabled={loading}>
               <Save className="w-4 h-4 mr-2" />
               {loading ? 'Saving...' : 'Save Changes'}
+              <span className="ml-2 text-xs opacity-60">Ctrl+S</span>
             </Button>
             <Button
               type="button"

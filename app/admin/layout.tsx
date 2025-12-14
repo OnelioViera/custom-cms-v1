@@ -1,11 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider, useAuth } from '@/lib/contexts/AuthContext';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import CommandPalette from '@/components/admin/CommandPalette';
+import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 import { 
   LayoutDashboard, 
   FileText, 
@@ -25,6 +28,14 @@ function AdminLayoutContent({
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading } = useAuth();
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  // Keyboard shortcut: Ctrl+K for command palette
+  useKeyboardShortcut(
+    { key: 'k', ctrl: true, preventDefault: true },
+    () => setCommandPaletteOpen(true),
+    []
+  );
 
   // Don't show layout on login page
   if (pathname === '/admin/login') {
@@ -113,6 +124,11 @@ function AdminLayoutContent({
           </ErrorBoundary>
         </main>
       </div>
+
+      <CommandPalette 
+        open={commandPaletteOpen} 
+        onClose={() => setCommandPaletteOpen(false)} 
+      />
     </div>
   );
 }

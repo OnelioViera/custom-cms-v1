@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -91,6 +92,33 @@ export default function EditPagePage() {
       setSaving(false);
     }
   };
+
+  // Keyboard shortcut: Ctrl+S to save
+  const handleSaveShortcut = useCallback((e: KeyboardEvent) => {
+    if (!saving) {
+      const form = document.querySelector('form');
+      if (form) {
+        form.requestSubmit();
+      }
+    }
+  }, [saving]);
+
+  useKeyboardShortcut(
+    { key: 's', ctrl: true, preventDefault: true },
+    handleSaveShortcut,
+    [saving]
+  );
+
+  // Keyboard shortcut: Escape to cancel
+  useKeyboardShortcut(
+    { key: 'Escape', preventDefault: false },
+    () => {
+      if (!saving) {
+        router.push('/admin/pages');
+      }
+    },
+    [saving, router]
+  );
 
   if (fetching) {
     return (
@@ -202,6 +230,7 @@ export default function EditPagePage() {
             <Button type="submit" disabled={saving}>
               <Save className="w-4 h-4 mr-2" />
               {saving ? 'Saving...' : 'Save Changes'}
+              <span className="ml-2 text-xs opacity-60">Ctrl+S</span>
             </Button>
             <Link href={`/preview/page/${params.id}`} target="_blank">
               <Button type="button" variant="outline">

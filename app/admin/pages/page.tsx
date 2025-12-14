@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -263,6 +264,39 @@ export default function PagesPage() {
   }, [filteredPages, currentPage, itemsPerPage]);
 
   const totalPages = Math.ceil(filteredPages.length / itemsPerPage);
+
+  // Keyboard shortcut: Ctrl+A to select all
+  useKeyboardShortcut(
+    { key: 'a', ctrl: true, preventDefault: true },
+    () => {
+      if (paginatedPages.length > 0) {
+        handleSelectAll();
+      }
+    },
+    [paginatedPages, selectedIds]
+  );
+
+  // Keyboard shortcut: Delete to remove selected
+  useKeyboardShortcut(
+    { key: 'Delete', preventDefault: true },
+    () => {
+      if (selectedIds.length > 0) {
+        setBulkDeleteConfirm(true);
+      }
+    },
+    [selectedIds]
+  );
+
+  // Keyboard shortcut: Escape to clear selection
+  useKeyboardShortcut(
+    { key: 'Escape', preventDefault: false },
+    () => {
+      if (selectedIds.length > 0) {
+        setSelectedIds([]);
+      }
+    },
+    [selectedIds]
+  );
 
   if (loading) {
     return (

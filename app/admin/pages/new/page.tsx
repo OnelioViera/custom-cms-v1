@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -169,6 +170,7 @@ export default function NewPagePage() {
             <Button type="submit" disabled={loading}>
               <Save className="w-4 h-4 mr-2" />
               {loading ? 'Creating...' : 'Create Page'}
+              <span className="ml-2 text-xs opacity-60">Ctrl+S</span>
             </Button>
             <Button
               type="button"
