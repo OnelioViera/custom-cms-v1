@@ -1,3 +1,5 @@
+// Content models for CMS - Updated with Project content field
+
 import { ObjectId } from 'mongodb';
 
 // Page Model
