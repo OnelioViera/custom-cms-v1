@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { validateForm, validateField, slugify, ValidationErrors } from '@/lib/validation';
+import ValidatedInput from '@/components/admin/ValidatedInput';
+import ValidatedTextarea from '@/components/admin/ValidatedTextarea';
 import {
   Select,
   SelectContent,
@@ -15,12 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, AlertCircle } from 'lucide-react';
 import RichTextEditor from '@/components/admin/RichTextEditor';
 
 export default function NewPagePage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
@@ -29,18 +32,72 @@ export default function NewPagePage() {
     metaDescription: '',
     status: 'draft' as 'draft' | 'published',
   });
+  const [errors, setErrors] = useState<ValidationErrors>({});
 
-  const handleTitleChange = (title: string) => {
-    setFormData({
-      ...formData,
-      title,
-      slug: formData.slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-    });
+  const validationRules = {
+    title: {
+      required: true,
+      minLength: 3,
+      maxLength: 200,
+    },
+    slug: {
+      required: true,
+      minLength: 3,
+      maxLength: 200,
+      pattern: /^[a-z0-9-]+$/,
+      custom: (value: string) => {
+        if (value && !/^[a-z0-9-]+$/.test(value)) {
+          return 'Slug can only contain lowercase letters, numbers, and hyphens';
+        }
+        return null;
+      },
+    },
+    content: {
+      required: true,
+      minLength: 10,
+    },
+  };
+
+  const handleFieldChange = (field: string, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    
+    // Validate field in real-time
+    const fieldRules = validationRules[field as keyof typeof validationRules];
+    if (fieldRules) {
+      const error = validateField(value, fieldRules, field);
+      setErrors({ ...errors, [field]: error || '' });
+    }
+  };
+
+  const handleTitleChange = (value: string) => {
+    // Auto-generate slug from title if slug is empty or matches the old title
+    const shouldAutoSlug = !formData.slug || formData.slug === slugify(formData.title);
+    const newSlug = shouldAutoSlug ? slugify(value) : formData.slug;
+    
+    // Update form data
+    setFormData({ ...formData, title: value, slug: newSlug });
+    
+    // Validate both fields
+    const titleError = validateField(value, validationRules.title, 'title');
+    const slugError = validateField(newSlug, validationRules.slug, 'slug');
+    setErrors({ ...errors, title: titleError || '', slug: slugError || '' });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    
+    // Validate entire form
+    const formErrors = validateForm(formData, validationRules);
+    setErrors(formErrors);
+    
+    // Don't submit if there are errors
+    if (Object.keys(formErrors).some(key => formErrors[key])) {
+      toast.error('Please fix the errors before submitting');
+      return;
+    }
+    
+    setSaving(true);
+    const toastId = toast.loading('Creating page...');
 
     try {
       const response = await fetch('/api/pages', {
@@ -52,18 +109,45 @@ export default function NewPagePage() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success('Page created successfully');
+        toast.success('Page created successfully', { id: toastId });
         router.push('/admin/pages');
       } else {
-        toast.error(data.message || 'Failed to create page');
+        toast.error(data.message || 'Failed to create page', { id: toastId });
       }
     } catch (error) {
       console.error('Error creating page:', error);
-      toast.error('Failed to create page');
+      toast.error('Failed to create page', { id: toastId });
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
+
+  // Keyboard shortcut: Ctrl+S to save
+  const handleSaveShortcut = useCallback((e: KeyboardEvent) => {
+    if (!saving) {
+      const form = document.querySelector('form');
+      if (form) {
+        form.requestSubmit();
+      }
+    }
+  }, [saving]);
+
+  useKeyboardShortcut(
+    { key: 's', ctrl: true, preventDefault: true },
+    handleSaveShortcut,
+    [saving]
+  );
+
+  // Keyboard shortcut: Escape to cancel
+  useKeyboardShortcut(
+    { key: 'Escape', preventDefault: false },
+    () => {
+      if (!saving) {
+        router.push('/admin/pages');
+      }
+    },
+    [saving, router]
+  );
 
   return (
     <div>
@@ -82,40 +166,50 @@ export default function NewPagePage() {
       <form onSubmit={handleSubmit} className="max-w-3xl">
         <div className="bg-white rounded-lg border p-6 space-y-6">
           {/* Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => handleTitleChange(e.target.value)}
-              placeholder="About Us"
-              required
-            />
-          </div>
+          <ValidatedInput
+            label="Title"
+            name="title"
+            value={formData.title}
+            onChange={handleTitleChange}
+            error={errors.title}
+            required
+            placeholder="Enter page title"
+          />
 
           {/* Slug */}
           <div className="space-y-2">
-            <Label htmlFor="slug">URL Slug *</Label>
             <div className="flex items-center gap-2">
               <span className="text-gray-500">/</span>
-              <Input
-                id="slug"
-                value={formData.slug}
-                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                placeholder="about-us"
-                required
-              />
+              <div className="flex-1">
+                <ValidatedInput
+                  label="URL Slug"
+                  name="slug"
+                  value={formData.slug}
+                  onChange={(value) => handleFieldChange('slug', value)}
+                  error={errors.slug}
+                  required
+                  placeholder="page-url-slug"
+                />
+              </div>
             </div>
           </div>
 
           {/* Content */}
           <div className="space-y-2">
-            <Label htmlFor="content">Content</Label>
+            <Label htmlFor="content">
+              Content
+              <span className="text-red-500 ml-1">*</span>
+            </Label>
             <RichTextEditor
               content={formData.content}
-              onChange={(content) => setFormData({ ...formData, content })}
+              onChange={(content) => handleFieldChange('content', content)}
               placeholder="Start writing your page content..."
             />
+            {errors.content && (
+              <p className="text-sm text-red-600 flex items-center gap-1">
+                {errors.content}
+              </p>
+            )}
           </div>
 
           {/* Status */}
@@ -165,11 +259,28 @@ export default function NewPagePage() {
             </div>
           </div>
 
+          {/* Validation Summary */}
+          {Object.keys(errors).some(key => errors[key]) && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-red-800 mb-2 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                Please fix the following errors:
+              </h3>
+              <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
+                {Object.entries(errors)
+                  .filter(([_, error]) => error)
+                  .map(([field, error]) => (
+                    <li key={field}>{error}</li>
+                  ))}
+              </ul>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex items-center gap-4 pt-4">
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={saving}>
               <Save className="w-4 h-4 mr-2" />
-              {loading ? 'Creating...' : 'Create Page'}
+              {saving ? 'Creating...' : 'Create Page'}
               <span className="ml-2 text-xs opacity-60">Ctrl+S</span>
             </Button>
             <Button

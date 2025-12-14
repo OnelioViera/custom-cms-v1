@@ -20,7 +20,13 @@ export function useKeyboardShortcut(
 
   const handleKeyPress = useCallback(
     (event: KeyboardEvent) => {
+      // Safety check: ignore if key is undefined
+      if (!event.key) return;
+
       const matchesShortcut = shortcuts.some((shortcut) => {
+        // Safety check for shortcut.key
+        if (!shortcut.key) return false;
+
         const keyMatches = event.key.toLowerCase() === shortcut.key.toLowerCase();
         const ctrlMatches = shortcut.ctrl ? (event.ctrlKey || event.metaKey) : !event.ctrlKey && !event.metaKey;
         const shiftMatches = shortcut.shift ? event.shiftKey : !event.shiftKey;
