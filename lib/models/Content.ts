@@ -20,13 +20,13 @@ export interface Project {
   title: string;
   slug: string;
   description: string;
+  content?: string;
   client?: string;
   startDate?: Date;
   endDate?: Date;
   status: 'planning' | 'in-progress' | 'completed';
   featured: boolean;
   images: string[];
-  content: string;
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
