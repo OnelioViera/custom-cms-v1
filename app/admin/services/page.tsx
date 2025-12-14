@@ -33,6 +33,7 @@ interface Service {
   title: string;
   slug: string;
   shortDescription: string;
+  fullDescription?: string;
   status: 'active' | 'inactive';
   order: number;
   updatedAt: string;
@@ -109,7 +110,7 @@ export default function ServicesPage() {
     return services.filter(service => 
       service.title.toLowerCase().includes(query) ||
       service.shortDescription.toLowerCase().includes(query) ||
-      (service as any).fullDescription?.toLowerCase().includes(query)
+      service.fullDescription?.toLowerCase().includes(query)
     );
   }, [services, searchQuery]);
 
@@ -288,6 +289,7 @@ export default function ServicesPage() {
                     checked={selectedIds.length === paginatedServices.length && paginatedServices.length > 0}
                     onChange={handleSelectAll}
                     className="w-4 h-4 rounded border-gray-300"
+                    aria-label="Select all services"
                   />
                 </TableHead>
                 <TableHead>Title</TableHead>
@@ -314,6 +316,7 @@ export default function ServicesPage() {
                       onChange={() => handleSelectOne(service._id?.toString() || '')}
                       className="w-4 h-4 rounded border-gray-300"
                       onClick={(e) => e.stopPropagation()}
+                      aria-label={`Select ${service.title}`}
                     />
                   </TableCell>
                   <TableCell className="font-medium">{service.title}</TableCell>

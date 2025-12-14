@@ -142,8 +142,6 @@ export default function TeamPage() {
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
 
-    const membersToDelete = members.filter(m => selectedIds.includes(m._id?.toString() || ''));
-
     setBulkActionLoading(true);
     setBulkDeleteConfirm(false);
 
@@ -288,6 +286,7 @@ export default function TeamPage() {
                     checked={selectedIds.length === paginatedMembers.length && paginatedMembers.length > 0}
                     onChange={handleSelectAll}
                     className="w-4 h-4 rounded border-gray-300"
+                    aria-label="Select all team members"
                   />
                 </TableHead>
                 <TableHead>Name</TableHead>
@@ -315,6 +314,7 @@ export default function TeamPage() {
                       onChange={() => handleSelectOne(member._id?.toString() || '')}
                       className="w-4 h-4 rounded border-gray-300"
                       onClick={(e) => e.stopPropagation()}
+                      aria-label={`Select ${member.name}`}
                     />
                   </TableCell>
                   <TableCell className="font-medium">{member.name}</TableCell>

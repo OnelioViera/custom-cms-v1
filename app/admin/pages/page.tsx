@@ -185,7 +185,7 @@ export default function PagesPage() {
     }
   };
 
-  const handleUndoBulkDelete = async (deletedPages: any[]) => {
+  const handleUndoBulkDelete = async (deletedPages: Page[]) => {
     try {
       const restorePromises = deletedPages.map(page =>
         fetch('/api/pages', {
@@ -351,6 +351,7 @@ export default function PagesPage() {
                   checked={selectedIds.length === paginatedPages.length && paginatedPages.length > 0}
                   onChange={handleSelectAll}
                   className="w-4 h-4 rounded border-gray-300"
+                  aria-label="Select all pages"
                 />
               </TableHead>
               <TableHead>Title</TableHead>
@@ -377,6 +378,7 @@ export default function PagesPage() {
                       onChange={() => handleSelectOne(page._id?.toString() || '')}
                       className="w-4 h-4 rounded border-gray-300"
                       onClick={(e) => e.stopPropagation()}
+                      aria-label={`Select ${page.title}`}
                     />
                   </TableCell>
                   <TableCell className="font-medium">{page.title}</TableCell>
