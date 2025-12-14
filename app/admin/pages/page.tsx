@@ -36,6 +36,8 @@ export default function PagesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
   useEffect(() => {
     fetchPages();
@@ -82,6 +84,79 @@ export default function PagesPage() {
       toast.error('Failed to delete page');
     } finally {
       setDeleteId(null);
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === paginatedPages.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(paginatedPages.map(page => page._id || '').filter(Boolean));
+    }
+  };
+
+  const handleSelectOne = (id: string) => {
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+    } else {
+      setSelectedIds([...selectedIds, id]);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    
+    if (!confirm(`Are you sure you want to delete ${selectedIds.length} page(s)?`)) {
+      return;
+    }
+
+    setBulkActionLoading(true);
+
+    try {
+      const deletePromises = selectedIds.map(id =>
+        fetch(`/api/pages/${id}`, { method: 'DELETE' })
+      );
+
+      await Promise.all(deletePromises);
+      
+      toast.success(`Successfully deleted ${selectedIds.length} page(s)`);
+      setSelectedIds([]);
+      fetchPages();
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      toast.error('Failed to delete some pages');
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkPublish = async () => {
+    if (selectedIds.length === 0) return;
+
+    setBulkActionLoading(true);
+
+    try {
+      const updatePromises = selectedIds.map(async (id) => {
+        const page = pages.find(p => p._id === id);
+        if (!page) return;
+
+        return fetch(`/api/pages/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...page, status: 'published' })
+        });
+      });
+
+      await Promise.all(updatePromises);
+      
+      toast.success(`Successfully published ${selectedIds.length} page(s)`);
+      setSelectedIds([]);
+      fetchPages();
+    } catch (error) {
+      console.error('Bulk publish error:', error);
+      toast.error('Failed to publish some pages');
+    } finally {
+      setBulkActionLoading(false);
     }
   };
 
@@ -146,10 +221,55 @@ export default function PagesPage() {
         />
       </div>
 
+      {/* Bulk Actions Bar */}
+      {selectedIds.length > 0 && (
+        <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <span className="font-medium text-blue-900">
+              {selectedIds.length} page{selectedIds.length !== 1 ? 's' : ''} selected
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedIds([])}
+            >
+              Clear Selection
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleBulkPublish}
+              disabled={bulkActionLoading}
+            >
+              Publish Selected
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleBulkDelete}
+              disabled={bulkActionLoading}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Selected
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.length === paginatedPages.length && paginatedPages.length > 0}
+                  onChange={handleSelectAll}
+                  className="w-4 h-4 rounded border-gray-300"
+                />
+              </TableHead>
               <TableHead>Title</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>Status</TableHead>
@@ -160,13 +280,22 @@ export default function PagesPage() {
           <TableBody>
             {paginatedPages.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                   {searchQuery ? 'No pages found matching your search.' : 'No pages yet. Create your first page!'}
                 </TableCell>
               </TableRow>
             ) : (
               paginatedPages.map((page) => (
                 <TableRow key={page._id?.toString()}>
+                  <TableCell>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(page._id || '')}
+                      onChange={() => handleSelectOne(page._id || '')}
+                      className="w-4 h-4 rounded border-gray-300"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{page.title}</TableCell>
                   <TableCell>
                     <code className="text-sm bg-gray-100 px-2 py-1 rounded">

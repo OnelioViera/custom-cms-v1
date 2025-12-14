@@ -26,6 +26,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2, Star } from 'lucide-react';
 import { toast } from 'sonner';
+import Pagination from '@/components/admin/Pagination';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Project {
   _id: string;
@@ -44,10 +52,19 @@ export default function ProjectsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
   useEffect(() => {
     fetchProjects();
   }, []);
+
+  // Reset to page 1 when search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const fetchProjects = async () => {
     try {
@@ -104,6 +121,109 @@ export default function ProjectsPage() {
     }
   };
 
+  const handleSelectAll = () => {
+    if (selectedIds.length === paginatedProjects.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(paginatedProjects.map(project => project._id || '').filter(Boolean));
+    }
+  };
+
+  const handleSelectOne = (id: string) => {
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+    } else {
+      setSelectedIds([...selectedIds, id]);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    
+    if (!confirm(`Are you sure you want to delete ${selectedIds.length} project(s)?`)) {
+      return;
+    }
+
+    setBulkActionLoading(true);
+
+    try {
+      const deletePromises = selectedIds.map(id =>
+        fetch(`/api/projects/${id}`, { method: 'DELETE' })
+      );
+
+      await Promise.all(deletePromises);
+      
+      toast.success(`Successfully deleted ${selectedIds.length} project(s)`);
+      setSelectedIds([]);
+      fetchProjects();
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      toast.error('Failed to delete some projects');
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkFeature = async (featured: boolean) => {
+    if (selectedIds.length === 0) return;
+
+    setBulkActionLoading(true);
+
+    try {
+      const updatePromises = selectedIds.map(async (id) => {
+        const project = projects.find(p => p._id === id);
+        if (!project) return;
+
+        return fetch(`/api/projects/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...project, featured })
+        });
+      });
+
+      await Promise.all(updatePromises);
+      
+      toast.success(`Successfully ${featured ? 'featured' : 'unfeatured'} ${selectedIds.length} project(s)`);
+      setSelectedIds([]);
+      fetchProjects();
+    } catch (error) {
+      console.error('Bulk feature error:', error);
+      toast.error('Failed to update some projects');
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkChangeStatus = async (newStatus: 'planning' | 'in-progress' | 'completed') => {
+    if (selectedIds.length === 0) return;
+
+    setBulkActionLoading(true);
+
+    try {
+      const updatePromises = selectedIds.map(async (id) => {
+        const project = projects.find(p => p._id === id);
+        if (!project) return;
+
+        return fetch(`/api/projects/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...project, status: newStatus })
+        });
+      });
+
+      await Promise.all(updatePromises);
+      
+      toast.success(`Successfully updated status for ${selectedIds.length} project(s)`);
+      setSelectedIds([]);
+      fetchProjects();
+    } catch (error) {
+      console.error('Bulk status change error:', error);
+      toast.error('Failed to update some projects');
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
   // Filter projects based on search query
   const filteredProjects = useMemo(() => {
     if (!searchQuery.trim()) return projects;
@@ -115,6 +235,15 @@ export default function ProjectsPage() {
       (project as any).content?.toLowerCase().includes(query)
     );
   }, [projects, searchQuery]);
+
+  // Paginate filtered results
+  const paginatedProjects = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredProjects.slice(startIndex, endIndex);
+  }, [filteredProjects, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
 
   if (loading) {
     return (
@@ -154,10 +283,64 @@ export default function ProjectsPage() {
         />
       </div>
 
+      {/* Bulk Actions Bar */}
+      {selectedIds.length > 0 && (
+        <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <span className="font-medium text-blue-900">
+              {selectedIds.length} project{selectedIds.length !== 1 ? 's' : ''} selected
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedIds([])}
+            >
+              Clear Selection
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => handleBulkFeature(true)}
+              disabled={bulkActionLoading}
+            >
+              Feature Selected
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleBulkFeature(false)}
+              disabled={bulkActionLoading}
+            >
+              Unfeature Selected
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleBulkDelete}
+              disabled={bulkActionLoading}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Selected
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-lg border">
         <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.length === paginatedProjects.length && paginatedProjects.length > 0}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 rounded border-gray-300"
+                    aria-label="Select all projects"
+                  />
+                </TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead>Client</TableHead>
                 <TableHead>Status</TableHead>
@@ -167,15 +350,25 @@ export default function ProjectsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProjects.length === 0 ? (
+              {paginatedProjects.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                     {searchQuery ? 'No projects found matching your search.' : 'No projects yet. Create your first project!'}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredProjects.map((project) => (
+                paginatedProjects.map((project) => (
                 <TableRow key={project._id?.toString()}>
+                  <TableCell>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(project._id || '')}
+                      onChange={() => handleSelectOne(project._id || '')}
+                      className="w-4 h-4 rounded border-gray-300"
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label={`Select ${project.title}`}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{project.title}</TableCell>
                   <TableCell className="text-gray-600">{project.client || '-'}</TableCell>
                   <TableCell>
@@ -212,6 +405,13 @@ export default function ProjectsPage() {
               )}
             </TableBody>
           </Table>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          itemsPerPage={itemsPerPage}
+          totalItems={filteredProjects.length}
+        />
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
