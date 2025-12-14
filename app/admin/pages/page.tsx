@@ -26,16 +26,24 @@ import { Pencil, Trash2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Page } from '@/lib/models/Content';
 import SearchInput from '@/components/admin/SearchInput';
+import Pagination from '@/components/admin/Pagination';
 
 export default function PagesPage() {
   const [pages, setPages] = useState<Page[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     fetchPages();
   }, []);
+
+  // Reset to page 1 when search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const fetchPages = async () => {
     try {
@@ -88,6 +96,15 @@ export default function PagesPage() {
     );
   }, [pages, searchQuery]);
 
+  // Paginate filtered results
+  const paginatedPages = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredPages.slice(startIndex, endIndex);
+  }, [filteredPages, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredPages.length / itemsPerPage);
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -127,14 +144,14 @@ export default function PagesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredPages.length === 0 ? (
+            {paginatedPages.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                   {searchQuery ? 'No pages found matching your search.' : 'No pages yet. Create your first page!'}
                 </TableCell>
               </TableRow>
             ) : (
-              filteredPages.map((page) => (
+              paginatedPages.map((page) => (
                 <TableRow key={page._id}>
                   <TableCell className="font-medium">{page.title}</TableCell>
                   <TableCell>
@@ -171,6 +188,13 @@ export default function PagesPage() {
             )}
           </TableBody>
         </Table>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          itemsPerPage={itemsPerPage}
+          totalItems={filteredPages.length}
+        />
       </div>
 
       {/* Delete Confirmation Dialog */}
