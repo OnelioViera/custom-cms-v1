@@ -290,8 +290,8 @@ export default function PagesPage() {
                   <TableCell>
                     <input
                       type="checkbox"
-                      checked={selectedIds.includes(page._id || '')}
-                      onChange={() => handleSelectOne(page._id || '')}
+                      checked={selectedIds.includes(page._id?.toString() || '')}
+                      onChange={() => handleSelectOne(page._id?.toString() || '')}
                       className="w-4 h-4 rounded border-gray-300"
                       onClick={(e) => e.stopPropagation()}
                     />

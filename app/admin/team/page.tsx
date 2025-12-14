@@ -311,8 +311,8 @@ export default function TeamPage() {
                   <TableCell>
                     <input
                       type="checkbox"
-                      checked={selectedIds.includes(member._id || '')}
-                      onChange={() => handleSelectOne(member._id || '')}
+                      checked={selectedIds.includes(member._id?.toString() || '')}
+                      onChange={() => handleSelectOne(member._id?.toString() || '')}
                       className="w-4 h-4 rounded border-gray-300"
                       onClick={(e) => e.stopPropagation()}
                     />

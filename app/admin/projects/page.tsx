@@ -362,8 +362,8 @@ export default function ProjectsPage() {
                   <TableCell>
                     <input
                       type="checkbox"
-                      checked={selectedIds.includes(project._id || '')}
-                      onChange={() => handleSelectOne(project._id || '')}
+                      checked={selectedIds.includes(project._id?.toString() || '')}
+                      onChange={() => handleSelectOne(project._id?.toString() || '')}
                       className="w-4 h-4 rounded border-gray-300"
                       onClick={(e) => e.stopPropagation()}
                       aria-label={`Select ${project.title}`}

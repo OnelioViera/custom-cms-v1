@@ -310,8 +310,8 @@ export default function ServicesPage() {
                   <TableCell>
                     <input
                       type="checkbox"
-                      checked={selectedIds.includes(service._id || '')}
-                      onChange={() => handleSelectOne(service._id || '')}
+                      checked={selectedIds.includes(service._id?.toString() || '')}
+                      onChange={() => handleSelectOne(service._id?.toString() || '')}
                       className="w-4 h-4 rounded border-gray-300"
                       onClick={(e) => e.stopPropagation()}
                     />
