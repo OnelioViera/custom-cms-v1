@@ -27,6 +27,7 @@ import {
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Pagination from '@/components/admin/Pagination';
+import ExportImport from '@/components/admin/ExportImport';
 
 interface Service {
   _id: string;
@@ -220,10 +221,18 @@ export default function ServicesPage() {
           <h1 className="text-3xl font-bold">Services</h1>
           <p className="text-gray-600 mt-1">Manage your service offerings</p>
         </div>
-        <Button onClick={() => router.push('/admin/services/new')}>
-          <Plus className="w-4 h-4 mr-2" />
-          New Service
-        </Button>
+        <div className="flex gap-2">
+          <ExportImport
+            type="services"
+            apiEndpoint="/api/services"
+            requiredFields={['title', 'slug', 'shortDescription']}
+            onImportComplete={fetchServices}
+          />
+          <Button onClick={() => router.push('/admin/services/new')}>
+            <Plus className="w-4 h-4 mr-2" />
+            New Service
+          </Button>
+        </div>
       </div>
 
       {/* Search Bar */}

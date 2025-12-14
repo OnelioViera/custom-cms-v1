@@ -27,6 +27,7 @@ import {
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Pagination from '@/components/admin/Pagination';
+import ExportImport from '@/components/admin/ExportImport';
 
 interface TeamMember {
   _id: string;
@@ -217,10 +218,18 @@ export default function TeamPage() {
           <h1 className="text-3xl font-bold">Team Members</h1>
           <p className="text-gray-600 mt-1">Manage your team directory</p>
         </div>
-        <Button onClick={() => router.push('/admin/team/new')}>
-          <Plus className="w-4 h-4 mr-2" />
-          New Team Member
-        </Button>
+        <div className="flex gap-2">
+          <ExportImport
+            type="team"
+            apiEndpoint="/api/team"
+            requiredFields={['name', 'slug', 'position']}
+            onImportComplete={fetchMembers}
+          />
+          <Button onClick={() => router.push('/admin/team/new')}>
+            <Plus className="w-4 h-4 mr-2" />
+            New Team Member
+          </Button>
+        </div>
       </div>
 
       {/* Search Bar */}

@@ -30,6 +30,7 @@ import SearchInput from '@/components/admin/SearchInput';
 import Pagination from '@/components/admin/Pagination';
 import TableSkeleton from '@/components/admin/skeletons/TableSkeleton';
 import { undoManager } from '@/lib/undoManager';
+import ExportImport from '@/components/admin/ExportImport';
 
 export default function PagesPage() {
   const [pages, setPages] = useState<Page[]>([]);
@@ -322,12 +323,20 @@ export default function PagesPage() {
           <h1 className="text-3xl font-bold">Pages</h1>
           <p className="text-gray-600 mt-1">Manage your website pages</p>
         </div>
-        <Link href="/admin/pages/new">
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            New Page
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <ExportImport
+            type="pages"
+            apiEndpoint="/api/pages"
+            requiredFields={['title', 'slug', 'content']}
+            onImportComplete={fetchPages}
+          />
+          <Link href="/admin/pages/new">
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              New Page
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Search Bar */}

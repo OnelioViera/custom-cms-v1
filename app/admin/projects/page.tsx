@@ -27,6 +27,7 @@ import {
 import { Plus, Edit, Trash2, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import Pagination from '@/components/admin/Pagination';
+import ExportImport from '@/components/admin/ExportImport';
 import {
   Select,
   SelectContent,
@@ -269,10 +270,18 @@ export default function ProjectsPage() {
           <h1 className="text-3xl font-bold">Projects</h1>
           <p className="text-gray-600 mt-1">Manage your project portfolio</p>
         </div>
-        <Button onClick={() => router.push('/admin/projects/new')}>
-          <Plus className="w-4 h-4 mr-2" />
-          New Project
-        </Button>
+        <div className="flex gap-2">
+          <ExportImport
+            type="projects"
+            apiEndpoint="/api/projects"
+            requiredFields={['title', 'slug', 'description']}
+            onImportComplete={fetchProjects}
+          />
+          <Button onClick={() => router.push('/admin/projects/new')}>
+            <Plus className="w-4 h-4 mr-2" />
+            New Project
+          </Button>
+        </div>
       </div>
 
       {/* Search Bar */}
