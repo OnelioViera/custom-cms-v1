@@ -21,7 +21,7 @@ import RichTextEditor from '@/components/admin/RichTextEditor';
 export default function EditPagePage() {
   const router = useRouter();
   const params = useParams();
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [formData, setFormData] = useState({
     title: '',
@@ -59,7 +59,9 @@ export default function EditPagePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
+    
+    const toastId = toast.loading('Saving page...');
 
     try {
       const response = await fetch(`/api/pages/${params.id}`, {
@@ -71,16 +73,22 @@ export default function EditPagePage() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success('Page updated successfully');
+        toast.success('Page saved successfully', {
+          id: toastId,
+        });
         router.push('/admin/pages');
       } else {
-        toast.error(data.message || 'Failed to update page');
+        toast.error(data.message || 'Failed to save page', {
+          id: toastId,
+        });
       }
     } catch (error) {
-      console.error('Error updating page:', error);
-      toast.error('Failed to update page');
+      console.error('Error saving page:', error);
+      toast.error('Failed to save page', {
+        id: toastId,
+      });
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -191,9 +199,9 @@ export default function EditPagePage() {
 
           {/* Actions */}
           <div className="flex items-center gap-4 pt-6 border-t">
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={saving}>
               <Save className="w-4 h-4 mr-2" />
-              {loading ? 'Saving...' : 'Save Changes'}
+              {saving ? 'Saving...' : 'Save Changes'}
             </Button>
             <Link href={`/preview/page/${params.id}`} target="_blank">
               <Button type="button" variant="outline">

@@ -49,6 +49,7 @@ export default function TeamPage() {
   const itemsPerPage = 10;
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
 
   useEffect(() => {
     fetchMembers();
@@ -140,12 +141,11 @@ export default function TeamPage() {
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
-    
-    if (!confirm(`Are you sure you want to delete ${selectedIds.length} team member(s)?`)) {
-      return;
-    }
+
+    const membersToDelete = members.filter(m => selectedIds.includes(m._id?.toString() || ''));
 
     setBulkActionLoading(true);
+    setBulkDeleteConfirm(false);
 
     try {
       const deletePromises = selectedIds.map(id =>
@@ -268,7 +268,7 @@ export default function TeamPage() {
             <Button
               variant="destructive"
               size="sm"
-              onClick={handleBulkDelete}
+              onClick={() => setBulkDeleteConfirm(true)}
               disabled={bulkActionLoading}
             >
               <Trash2 className="w-4 h-4 mr-2" />
@@ -369,6 +369,22 @@ export default function TeamPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={bulkDeleteConfirm} onOpenChange={setBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.length} team member(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will delete {selectedIds.length} team member(s). You can undo this action from the notification.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

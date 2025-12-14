@@ -28,6 +28,7 @@ import { Page } from '@/lib/models/Content';
 import SearchInput from '@/components/admin/SearchInput';
 import Pagination from '@/components/admin/Pagination';
 import TableSkeleton from '@/components/admin/skeletons/TableSkeleton';
+import { undoManager } from '@/lib/undoManager';
 
 export default function PagesPage() {
   const [pages, setPages] = useState<Page[]>([]);
@@ -38,6 +39,7 @@ export default function PagesPage() {
   const itemsPerPage = 10;
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
 
   useEffect(() => {
     fetchPages();
@@ -66,6 +68,9 @@ export default function PagesPage() {
   const handleDelete = async () => {
     if (!deleteId) return;
 
+    // Find the page before deleting
+    const pageToDelete = pages.find(p => p._id?.toString() === deleteId);
+
     try {
       const response = await fetch(`/api/pages/${deleteId}`, {
         method: 'DELETE',
@@ -74,7 +79,17 @@ export default function PagesPage() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success('Page deleted successfully');
+        // Store for undo
+        if (pageToDelete) {
+          undoManager.addDeleteAction('pages', [pageToDelete]);
+        }
+
+        toast.success('Page deleted successfully', {
+          action: pageToDelete ? {
+            label: 'Undo',
+            onClick: () => handleUndoDelete(),
+          } : undefined,
+        });
         fetchPages();
       } else {
         toast.error(data.message || 'Failed to delete page');
@@ -84,6 +99,38 @@ export default function PagesPage() {
       toast.error('Failed to delete page');
     } finally {
       setDeleteId(null);
+    }
+  };
+
+  const handleUndoDelete = async () => {
+    const lastAction = undoManager.getLastAction();
+    
+    if (!lastAction || lastAction.collection !== 'pages') {
+      toast.error('Nothing to undo');
+      return;
+    }
+
+    try {
+      const page = lastAction.items[0];
+      
+      const response = await fetch('/api/pages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(page),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        undoManager.removeLastAction();
+        toast.success('Page restored');
+        fetchPages();
+      } else {
+        toast.error('Failed to restore page');
+      }
+    } catch (error) {
+      console.error('Undo error:', error);
+      toast.error('Failed to restore page');
     }
   };
 
@@ -105,12 +152,12 @@ export default function PagesPage() {
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
-    
-    if (!confirm(`Are you sure you want to delete ${selectedIds.length} page(s)?`)) {
-      return;
-    }
+
+    // Store pages before deleting
+    const pagesToDelete = pages.filter(p => selectedIds.includes(p._id?.toString() || ''));
 
     setBulkActionLoading(true);
+    setBulkDeleteConfirm(false);
 
     try {
       const deletePromises = selectedIds.map(id =>
@@ -118,8 +165,16 @@ export default function PagesPage() {
       );
 
       await Promise.all(deletePromises);
+
+      // Store for undo
+      undoManager.addDeleteAction('pages', pagesToDelete);
       
-      toast.success(`Successfully deleted ${selectedIds.length} page(s)`);
+      toast.success(`Successfully deleted ${selectedIds.length} page(s)`, {
+        action: {
+          label: 'Undo',
+          onClick: () => handleUndoBulkDelete(pagesToDelete),
+        },
+      });
       setSelectedIds([]);
       fetchPages();
     } catch (error) {
@@ -130,10 +185,34 @@ export default function PagesPage() {
     }
   };
 
+  const handleUndoBulkDelete = async (deletedPages: any[]) => {
+    try {
+      const restorePromises = deletedPages.map(page =>
+        fetch('/api/pages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(page),
+        })
+      );
+
+      await Promise.all(restorePromises);
+      
+      undoManager.removeLastAction();
+      toast.success(`Successfully restored ${deletedPages.length} page(s)`);
+      fetchPages();
+    } catch (error) {
+      console.error('Bulk undo error:', error);
+      toast.error('Failed to restore some pages');
+    }
+  };
+
   const handleBulkPublish = async () => {
     if (selectedIds.length === 0) return;
 
     setBulkActionLoading(true);
+    
+    // Show progress toast
+    const toastId = toast.loading(`Publishing ${selectedIds.length} page(s)...`);
 
     try {
       const updatePromises = selectedIds.map(async (id) => {
@@ -149,12 +228,16 @@ export default function PagesPage() {
 
       await Promise.all(updatePromises);
       
-      toast.success(`Successfully published ${selectedIds.length} page(s)`);
+      toast.success(`Successfully published ${selectedIds.length} page(s)`, {
+        id: toastId,
+      });
       setSelectedIds([]);
       fetchPages();
     } catch (error) {
       console.error('Bulk publish error:', error);
-      toast.error('Failed to publish some pages');
+      toast.error('Failed to publish some pages', {
+        id: toastId,
+      });
     } finally {
       setBulkActionLoading(false);
     }
@@ -248,7 +331,7 @@ export default function PagesPage() {
             <Button
               variant="destructive"
               size="sm"
-              onClick={handleBulkDelete}
+              onClick={() => setBulkDeleteConfirm(true)}
               disabled={bulkActionLoading}
             >
               <Trash2 className="w-4 h-4 mr-2" />
@@ -352,6 +435,22 @@ export default function PagesPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={bulkDeleteConfirm} onOpenChange={setBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.length} page(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will delete {selectedIds.length} page(s). You can undo this action from the notification.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
