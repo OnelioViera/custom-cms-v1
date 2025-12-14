@@ -98,7 +98,7 @@ export default function ServicesPage() {
     return services.filter(service => 
       service.title.toLowerCase().includes(query) ||
       service.shortDescription.toLowerCase().includes(query) ||
-      service.fullDescription?.toLowerCase().includes(query)
+      (service as any).fullDescription?.toLowerCase().includes(query)
     );
   }, [services, searchQuery]);
 
