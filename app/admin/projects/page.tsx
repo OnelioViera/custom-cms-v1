@@ -125,7 +125,7 @@ export default function ProjectsPage() {
     if (selectedIds.length === paginatedProjects.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(paginatedProjects.map(project => project._id || '').filter(Boolean));
+      setSelectedIds(paginatedProjects.map(project => project._id?.toString() || '').filter(Boolean));
     }
   };
 

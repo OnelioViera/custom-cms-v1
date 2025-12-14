@@ -126,7 +126,7 @@ export default function TeamPage() {
     if (selectedIds.length === paginatedMembers.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(paginatedMembers.map(member => member._id || '').filter(Boolean));
+      setSelectedIds(paginatedMembers.map(member => member._id?.toString() || '').filter(Boolean));
     }
   };
 

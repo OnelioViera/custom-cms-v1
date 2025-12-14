@@ -126,7 +126,7 @@ export default function ServicesPage() {
     if (selectedIds.length === paginatedServices.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(paginatedServices.map(service => service._id || '').filter(Boolean));
+      setSelectedIds(paginatedServices.map(service => service._id?.toString() || '').filter(Boolean));
     }
   };
 

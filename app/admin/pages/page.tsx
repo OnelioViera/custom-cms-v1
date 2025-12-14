@@ -91,7 +91,7 @@ export default function PagesPage() {
     if (selectedIds.length === paginatedPages.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(paginatedPages.map(page => page._id || '').filter(Boolean));
+      setSelectedIds(paginatedPages.map(page => page._id?.toString() || '').filter(Boolean));
     }
   };
 
