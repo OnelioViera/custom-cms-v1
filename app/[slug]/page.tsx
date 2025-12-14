@@ -1,4 +1,6 @@
 import { notFound } from 'next/navigation';
+import { generateMetadata as generateMeta } from '@/lib/seo';
+import type { Metadata } from 'next';
 import { getDatabase } from '@/lib/mongodb';
 import { Page } from '@/lib/models/Content';
 
@@ -28,20 +30,23 @@ export async function generateMetadata({
   params 
 }: { 
   params: Promise<{ slug: string }> 
-}) {
+}): Promise<Metadata> {
   const { slug } = await params;
   const page = await getPage(slug);
 
   if (!page) {
     return {
-      title: 'Page Not Found'
+      title: 'Page Not Found',
     };
   }
 
-  return {
+  return generateMeta({
     title: page.metaTitle || page.title,
-    description: page.metaDescription || page.content.substring(0, 160)
-  };
+    description: page.metaDescription || page.content.substring(0, 155),
+    url: `/${page.slug}`,
+    type: 'article',
+    keywords: (page as { keywords?: string[] }).keywords || [],
+  });
 }
 
 export default async function DynamicPage({ 
@@ -56,28 +61,37 @@ export default async function DynamicPage({
     notFound();
   }
 
+  // JSON-LD structured data
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: page.title,
+    description: page.metaDescription || page.content.substring(0, 155),
+    url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/${page.slug}`,
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <section className="bg-blue-900 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-5xl font-bold">{page.title}</h1>
         </div>
       </section>
 
-      {/* Page Content */}
       <section className="py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-lg shadow-sm p-8">
-            <div className="prose prose-lg max-w-none">
-              <div 
-                className="text-gray-700 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: page.content }}
-              />
-            </div>
+            <div 
+              className="prose prose-lg max-w-none"
+              dangerouslySetInnerHTML={{ __html: page.content }}
+            />
           </div>
         </div>
       </section>
-    </div>
+    </>
   );
 }

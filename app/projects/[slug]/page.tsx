@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { generateMetadata as generateMeta } from '@/lib/seo';
+import type { Metadata } from 'next';
+import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Calendar, User } from 'lucide-react';
+import { Calendar, User } from 'lucide-react';
 import { getDatabase } from '@/lib/mongodb';
 import { Project } from '@/lib/models/Content';
 
@@ -25,7 +26,32 @@ async function getProject(slug: string) {
   }
 }
 
-export default async function ProjectDetailPage({ 
+export async function generateMetadata({ 
+  params 
+}: { 
+  params: Promise<{ slug: string }> 
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const project = await getProject(slug);
+
+  if (!project) {
+    return {
+      title: 'Project Not Found',
+    };
+  }
+
+  return generateMeta({
+    title: project.title,
+    description: project.description,
+    url: `/projects/${project.slug}`,
+    image: project.images?.[0],
+    type: 'article',
+    publishedTime: project.createdAt ? new Date(project.createdAt).toISOString() : undefined,
+    keywords: [project.client, 'project', 'precast concrete'].filter(Boolean) as string[],
+  });
+}
+
+export default async function ProjectPage({ 
   params 
 }: { 
   params: Promise<{ slug: string }> 
@@ -37,20 +63,30 @@ export default async function ProjectDetailPage({
     notFound();
   }
 
+  // JSON-LD structured data
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Project',
+    name: project.title,
+    description: project.description,
+    image: project.images?.[0],
+    client: project.client,
+    startDate: project.startDate,
+    endDate: project.endDate,
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      
       <section className="bg-blue-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Link href="/projects">
-            <Button variant="ghost" className="text-white hover:text-blue-100 mb-6">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Projects
-            </Button>
-          </Link>
           <div className="flex items-center gap-3 mb-4">
             <Badge variant={project.status === 'completed' ? 'default' : 'secondary'} className="bg-blue-700">
-              {project.status === 'in-progress' ? 'In Progress' : 'Completed'}
+              {project.status === 'in-progress' ? 'In Progress' : project.status}
             </Badge>
             {project.featured && (
               <Badge variant="outline" className="border-white text-white">
@@ -65,11 +101,23 @@ export default async function ProjectDetailPage({
         </div>
       </section>
 
-      {/* Project Details */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {project.images && project.images[0] && (
+            <div className="mb-8 rounded-lg overflow-hidden">
+              <div className="aspect-video relative">
+                <Image
+                  src={project.images[0]}
+                  alt={project.title}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              </div>
+            </div>
+          )}
+
           <div className="bg-white rounded-lg shadow-sm p-8">
-            {/* Project Info */}
             <div className="grid md:grid-cols-2 gap-8 mb-8 pb-8 border-b">
               {project.startDate && (
                 <div className="flex items-start gap-3">
@@ -100,17 +148,13 @@ export default async function ProjectDetailPage({
               )}
             </div>
 
-            {/* Description */}
-            {project.description && (
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Overview</h2>
-                <p className="text-gray-700 text-lg leading-relaxed">
-                  {project.description}
-                </p>
-              </div>
-            )}
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Overview</h2>
+              <p className="text-gray-700 text-lg leading-relaxed">
+                {project.description}
+              </p>
+            </div>
 
-            {/* Full Content */}
             {project.content && (
               <div className="prose max-w-none">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">Project Details</h2>
@@ -123,23 +167,6 @@ export default async function ProjectDetailPage({
           </div>
         </div>
       </section>
-
-      {/* CTA Section */}
-      <section className="py-16 bg-blue-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">
-            Have a Project in Mind?
-          </h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Let's discuss how we can help bring your renewable energy infrastructure to life.
-          </p>
-          <Link href="/contact">
-            <Button size="lg" variant="default" className="bg-white text-blue-900 hover:bg-blue-50">
-              Get in Touch
-            </Button>
-          </Link>
-        </div>
-      </section>
-    </div>
+    </>
   );
 }
