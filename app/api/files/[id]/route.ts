@@ -38,7 +38,7 @@ export async function GET(
         const buffer = Buffer.concat(chunks);
         
         // Access contentType from metadata or use fallback
-        const contentType = (file as any).contentType || file.metadata?.contentType || 'image/jpeg';
+        const contentType = file.metadata?.contentType || 'image/jpeg';
         
         console.log('Serving with Content-Type:', contentType);
         

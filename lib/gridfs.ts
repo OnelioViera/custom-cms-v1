@@ -23,8 +23,8 @@ export async function uploadFile(
   
   return new Promise((resolve, reject) => {
     const uploadStream = bucket.openUploadStream(filename, {
-      contentType,
       metadata: {
+        contentType,
         uploadedAt: new Date()
       }
     });
