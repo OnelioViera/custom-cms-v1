@@ -16,6 +16,7 @@ import {
 import { ArrowLeft, Save, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import RichTextEditor from '@/components/admin/RichTextEditor';
+import ImageUpload from '@/components/admin/ImageUpload';
 
 export default function EditServicePage() {
   const router = useRouter();
@@ -231,15 +232,12 @@ export default function EditServicePage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="image">Hero Image URL</Label>
-              <Input
-                id="image"
-                type="url"
-                value={formData.image}
-                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-              />
-            </div>
+            <ImageUpload
+              value={formData.image}
+              onChange={(image) => setFormData({ ...formData, image })}
+              label="Hero Image"
+              aspectRatio={16 / 9}
+            />
           </div>
 
           {/* Order & Status */}

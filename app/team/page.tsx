@@ -53,7 +53,11 @@ export default async function TeamPage() {
                 >
                   {/* Profile Image */}
                   {member.image ? (
-                    <div className="aspect-square bg-gradient-to-br from-blue-500 to-blue-700" />
+                    <img
+                      src={member.image}
+                      alt={member.name}
+                      className="aspect-square object-cover w-full"
+                    />
                   ) : (
                     <div className="aspect-square bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
                       <span className="text-white text-4xl font-bold">

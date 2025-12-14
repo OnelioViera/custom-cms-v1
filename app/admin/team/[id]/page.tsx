@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ArrowLeft, Save } from 'lucide-react';
+import ImageUpload from '@/components/admin/ImageUpload';
 
 export default function EditTeamMemberPage() {
   const router = useRouter();
@@ -199,15 +200,12 @@ export default function EditTeamMemberPage() {
           </div>
 
           {/* Image */}
-          <div className="space-y-2">
-            <Label htmlFor="image">Profile Image URL</Label>
-            <Input
-              id="image"
-              type="url"
-              value={formData.image}
-              onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-            />
-          </div>
+          <ImageUpload
+            value={formData.image}
+            onChange={(image) => setFormData({ ...formData, image })}
+            label="Profile Image"
+            aspectRatio={1}
+          />
 
           {/* Order & Status */}
           <div className="grid grid-cols-2 gap-4">

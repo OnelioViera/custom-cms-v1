@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Save } from 'lucide-react';
 import { toast } from 'sonner';
+import ImageUpload from '@/components/admin/ImageUpload';
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
@@ -139,27 +140,18 @@ export default function SettingsPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="logo">Logo URL</Label>
-              <Input
-                id="logo"
-                type="url"
-                value={formData.logo}
-                onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
-                placeholder="https://example.com/logo.png"
-              />
-            </div>
+            <ImageUpload
+              value={formData.logo}
+              onChange={(logo) => setFormData({ ...formData, logo })}
+              label="Logo"
+              aspectRatio={0}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="favicon">Favicon URL</Label>
-              <Input
-                id="favicon"
-                type="url"
-                value={formData.favicon}
-                onChange={(e) => setFormData({ ...formData, favicon: e.target.value })}
-                placeholder="https://example.com/favicon.ico"
-              />
-            </div>
+            <ImageUpload
+              value={formData.favicon}
+              onChange={(favicon) => setFormData({ ...formData, favicon })}
+              label="Favicon"
+            />
           </div>
 
           {/* Brand Colors */}
