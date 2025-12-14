@@ -37,7 +37,7 @@ export async function checkIndexes(): Promise<Record<string, IndexReport>> {
     
     report[collectionName] = {
       indexCount: indexes.length,
-      indexes: indexes.map((i: { name: string }) => i.name),
+      indexes: indexes.map((i: { name?: string }) => i.name || 'unknown'),
       documentCount,
     };
   }
