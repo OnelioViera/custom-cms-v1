@@ -21,7 +21,7 @@ export async function GET() {
           const db = await getDatabase();
           const projectsCollection = db.collection<Project>('projects');
           return await projectsCollection
-            .find({ status: { $in: ['in-progress', 'completed'] } })
+            .find({ status: { $in: ['planning', 'in-progress', 'completed'] } })
             .sort({ createdAt: -1 })
             .toArray();
         });
