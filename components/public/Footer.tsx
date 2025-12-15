@@ -51,6 +51,8 @@ export default function Footer() {
             <span className="text-gray-700">|</span>
             <Link 
               href="/admin/login" 
+              target="_blank"
+              rel="noopener noreferrer"
               className="hover:text-white transition-colors text-gray-500"
             >
               Admin
