@@ -12,16 +12,25 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 // GET all projects
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const includeAll = searchParams.get('includeAll') === 'true';
+
     const projects = await withCache(
-      'projects:published',
+      includeAll ? 'projects:all' : 'projects:published',
       async () => {
         return await measureAsync('api.projects.get', async () => {
           const db = await getDatabase();
           const projectsCollection = db.collection<Project>('projects');
+          
+          // Admin gets all statuses, public gets only in-progress and completed
+          const statusFilter = includeAll 
+            ? { status: { $in: ['planning', 'in-progress', 'completed'] } }
+            : { status: { $in: ['in-progress', 'completed'] } };
+          
           return await projectsCollection
-            .find({ status: { $in: ['planning', 'in-progress', 'completed'] } })
+            .find(statusFilter)
             .sort({ createdAt: -1 })
             .toArray();
         });
@@ -74,8 +83,9 @@ export async function POST(request: NextRequest) {
       return await projectsCollection.insertOne(project as Project);
     });
 
-    // Invalidate cache
+    // Invalidate cache (both admin and public caches)
     cache.delete('projects:published');
+    cache.delete('projects:all');
 
     errorLogger.info('Project created', {
       projectId: result.insertedId.toString(),
