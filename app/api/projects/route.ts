@@ -7,6 +7,10 @@ import { measureAsync } from '@/lib/monitoring/performance';
 import { errorLogger } from '@/lib/monitoring/errors';
 import { config } from '@/lib/config';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // GET all projects
 export async function GET() {
   try {
