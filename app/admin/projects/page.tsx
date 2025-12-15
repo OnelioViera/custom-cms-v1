@@ -70,13 +70,16 @@ export default function ProjectsPage() {
 
   const fetchProjects = async () => {
     try {
-      const response = await fetch('/api/projects');
+      setLoading(true);
+      const response = await fetch('/api/projects?includeAll=true');
       const data = await response.json();
+      
       if (data.success) {
         setProjects(data.projects);
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
+      toast.error('Failed to load projects');
     } finally {
       setLoading(false);
     }
