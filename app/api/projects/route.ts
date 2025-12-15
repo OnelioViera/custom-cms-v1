@@ -26,8 +26,8 @@ export async function GET(request: NextRequest) {
           
           // Admin gets all statuses, public gets only in-progress and completed
           const statusFilter = includeAll 
-            ? { status: { $in: ['planning', 'in-progress', 'completed'] } }
-            : { status: { $in: ['in-progress', 'completed'] } };
+            ? { status: { $in: ['planning' as const, 'in-progress' as const, 'completed' as const] } }
+            : { status: { $in: ['in-progress' as const, 'completed' as const] } };
           
           return await projectsCollection
             .find(statusFilter)
