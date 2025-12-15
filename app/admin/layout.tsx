@@ -17,7 +17,8 @@ import {
   Wrench,
   Image,
   Settings,
-  LogOut
+  LogOut,
+  Activity
 } from 'lucide-react';
 
 function AdminLayoutContent({
@@ -58,6 +59,8 @@ function AdminLayoutContent({
     { name: 'Team Members', href: '/admin/team', icon: Users },
     { name: 'Services', href: '/admin/services', icon: Wrench },
     { name: 'Media', href: '/admin/media', icon: Image },
+    { name: 'Monitoring', href: '/admin/monitoring', icon: Activity },
+    { name: 'Config', href: '/admin/config', icon: Settings },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 

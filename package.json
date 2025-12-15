@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "setup-indexes": "tsx scripts/setup-indexes.ts"
+    "setup-indexes": "tsx scripts/setup-indexes.ts",
+    "setup-indexes-prod": "tsx scripts/setup-indexes-prod.ts"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",

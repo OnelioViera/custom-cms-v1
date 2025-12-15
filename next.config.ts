@@ -22,9 +22,10 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    const isProduction = process.env.NODE_ENV === 'production';
+    
     return [
       {
-        // Apply security headers to all routes
         source: '/:path*',
         headers: [
           {
@@ -41,8 +42,8 @@ const nextConfig: NextConfig = {
               "base-uri 'self'",
               "form-action 'self'",
               "frame-ancestors 'none'",
-              "upgrade-insecure-requests",
-            ].join('; '),
+              isProduction ? "upgrade-insecure-requests" : "",
+            ].filter(Boolean).join('; '),
           },
           {
             key: 'X-Content-Type-Options',
@@ -60,24 +61,22 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
           },
-        ],
-      },
-      {
-        // Specific headers for API routes
-        source: '/api/:path*',
-        headers: [
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
+          // HSTS only in production
+          ...(isProduction ? [
+            {
+              key: 'Strict-Transport-Security',
+              value: 'max-age=31536000; includeSubDomains; preload',
+            },
+          ] : []),
         ],
       },
     ];
   },
+  // Production optimizations
+  ...(process.env.NODE_ENV === 'production' ? {
+    poweredByHeader: false,
+    compress: true,
+  } : {}),
 };
 
 export default nextConfig;

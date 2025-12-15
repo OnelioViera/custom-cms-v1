@@ -1,18 +1,27 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { Page } from '@/lib/models/Content';
+import { measureAsync } from '@/lib/monitoring/performance';
+import { errorLogger } from '@/lib/monitoring/errors';
+import { withCache, cache } from '@/lib/cache';
+import { config } from '@/lib/config';
 
-// GET all pages
 export async function GET() {
   try {
-    const db = await getDatabase();
-    const pagesCollection = db.collection<Page>('pages');
-
-    // Use index for filtering and sorting
-    const pages = await pagesCollection
-      .find({ status: 'published' })
-      .sort({ createdAt: -1 })
-      .toArray();
+    const pages = await withCache(
+      'pages:published',
+      async () => {
+        return await measureAsync('api.pages.get', async () => {
+          const db = await getDatabase();
+          const pagesCollection = db.collection<Page>('pages');
+          return await pagesCollection
+            .find({ status: 'published' })
+            .sort({ createdAt: -1 })
+            .toArray();
+        });
+      },
+      config.get('CACHE_TTL_PAGES')
+    );
 
     return NextResponse.json({
       success: true,
@@ -22,6 +31,11 @@ export async function GET() {
       }))
     });
   } catch (error) {
+    errorLogger.error('Failed to fetch pages', error as Error, {
+      endpoint: '/api/pages',
+      method: 'GET',
+    });
+    
     console.error('Error fetching pages:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to fetch pages' },
@@ -30,49 +44,46 @@ export async function GET() {
   }
 }
 
-// POST create new page
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const db = await getDatabase();
-    const pagesCollection = db.collection<Page>('pages');
+    const data = await request.json();
 
-    // Check if slug already exists
-    const existingPage = await pagesCollection.findOne({ slug: body.slug });
-    if (existingPage) {
-      return NextResponse.json({
-        success: false,
-        message: 'A page with this slug already exists'
-      }, { status: 400 });
-    }
+    const result = await measureAsync('api.pages.create', async () => {
+      const db = await getDatabase();
+      const pagesCollection = db.collection<Page>('pages');
 
-    const newPage: Page = {
-      title: body.title,
-      slug: body.slug,
-      content: body.content || '',
-      metaTitle: body.metaTitle,
-      metaDescription: body.metaDescription,
-      status: body.status || 'draft',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      createdBy: body.createdBy || 'admin'
-    };
+      const page: Omit<Page, '_id'> = {
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-    const result = await pagesCollection.insertOne(newPage);
+      return await pagesCollection.insertOne(page as Page);
+    });
+
+    // Invalidate cache
+    cache.delete('pages:published');
+
+    errorLogger.info('Page created', {
+      pageId: result.insertedId.toString(),
+      endpoint: '/api/pages',
+    });
 
     return NextResponse.json({
       success: true,
       message: 'Page created successfully',
-      page: {
-        ...newPage,
-        _id: result.insertedId.toString()
-      }
+      id: result.insertedId.toString(),
     });
   } catch (error) {
+    errorLogger.error('Failed to create page', error as Error, {
+      endpoint: '/api/pages',
+      method: 'POST',
+    });
+
     console.error('Error creating page:', error);
-    return NextResponse.json({
-      success: false,
-      message: 'Failed to create page'
-    }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: 'Failed to create page' },
+      { status: 500 }
+    );
   }
 }

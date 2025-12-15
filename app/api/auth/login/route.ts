@@ -3,6 +3,9 @@ import { getDatabase } from '@/lib/mongodb';
 import { verifyPassword, generateToken } from '@/lib/auth';
 import { User } from '@/lib/models/User';
 import { withRateLimit } from '@/lib/middleware/withRateLimit';
+import { measureAsync } from '@/lib/monitoring/performance';
+import { errorLogger } from '@/lib/monitoring/errors';
+import { config } from '@/lib/config';
 
 export async function POST(request: NextRequest) {
   return withRateLimit(
@@ -18,13 +21,19 @@ export async function POST(request: NextRequest) {
           }, { status: 400 });
         }
 
-        const db = await getDatabase();
-        const usersCollection = db.collection<User>('users');
-
-        // Find user by email
-        const user = await usersCollection.findOne({ email });
+        // Find user by email with performance tracking
+        const user = await measureAsync('api.auth.login.verify', async () => {
+          const db = await getDatabase();
+          const usersCollection = db.collection<User>('users');
+          return await usersCollection.findOne({ email });
+        });
 
         if (!user) {
+          errorLogger.warn('Login attempt with invalid email', {
+            email,
+            endpoint: '/api/auth/login',
+          });
+
           return NextResponse.json({
             success: false,
             message: 'Invalid credentials'
@@ -35,6 +44,11 @@ export async function POST(request: NextRequest) {
         const isValid = await verifyPassword(password, user.password);
 
         if (!isValid) {
+          errorLogger.warn('Login attempt with invalid password', {
+            email,
+            endpoint: '/api/auth/login',
+          });
+
           return NextResponse.json({
             success: false,
             message: 'Invalid credentials'
@@ -67,8 +81,18 @@ export async function POST(request: NextRequest) {
           maxAge: 60 * 60 * 24 * 7 // 7 days
         });
 
+        errorLogger.info('User logged in successfully', {
+          userId: user._id?.toString(),
+          email: user.email,
+        });
+
         return response;
       } catch (error) {
+        errorLogger.error('Login failed', error as Error, {
+          endpoint: '/api/auth/login',
+          method: 'POST',
+        });
+
         console.error('Login error:', error);
         return NextResponse.json({
           success: false,
@@ -78,8 +102,8 @@ export async function POST(request: NextRequest) {
       }
     },
     {
-      interval: 15 * 60 * 1000, // 15 minutes
-      maxRequests: process.env.NODE_ENV === 'development' ? 50 : 5,
+      interval: config.get('RATE_LIMIT_LOGIN_WINDOW'),
+      maxRequests: config.get('RATE_LIMIT_LOGIN_MAX'),
     }
   );
 }

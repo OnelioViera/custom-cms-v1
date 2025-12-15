@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { Page } from '@/lib/models/Content';
 import { ObjectId } from 'mongodb';
+import { cache } from '@/lib/cache';
 
 // GET single page
 export async function GET(
@@ -71,6 +72,10 @@ export async function PUT(
       }, { status: 404 });
     }
 
+    // Invalidate cache
+    cache.delete('pages:published');
+    cache.delete(`page:${id}`);
+
     return NextResponse.json({
       success: true,
       message: 'Page updated successfully'
@@ -102,6 +107,10 @@ export async function DELETE(
         message: 'Page not found'
       }, { status: 404 });
     }
+
+    // Invalidate cache
+    cache.delete('pages:published');
+    cache.delete(`page:${id}`);
 
     return NextResponse.json({
       success: true,
