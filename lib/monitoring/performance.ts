@@ -8,7 +8,10 @@ interface PerformanceMetric {
   metadata?: Record<string, unknown>;
 }
 
-const METRICS_FILE = path.join(process.cwd(), '.metrics.json');
+// Use /tmp in serverless environments
+const METRICS_FILE = process.env.VERCEL
+  ? '/tmp/.metrics.json'
+  : path.join(process.cwd(), '.metrics.json');
 
 class PerformanceMonitor {
   private maxMetrics = 1000;

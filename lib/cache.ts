@@ -8,16 +8,22 @@ interface CacheEntry<T> {
   ttl: number;
 }
 
-const CACHE_DIR = path.join(process.cwd(), '.cache');
+// Use /tmp in serverless environments (Vercel)
+const CACHE_DIR = process.env.VERCEL 
+  ? '/tmp/.cache' 
+  : path.join(process.cwd(), '.cache');
 
 // Ensure cache directory exists
-if (!fs.existsSync(CACHE_DIR)) {
-  fs.mkdirSync(CACHE_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(CACHE_DIR)) {
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
+  }
+} catch (error) {
+  console.warn('Unable to create cache directory:', error);
 }
 
 class Cache {
   private getCacheFilePath(key: string): string {
-    // Sanitize key for filename
     const sanitized = key.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     return path.join(CACHE_DIR, `${sanitized}.json`);
   }

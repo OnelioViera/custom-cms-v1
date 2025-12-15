@@ -4,6 +4,12 @@ import { verifyTokenEdge } from './lib/auth-edge';
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  
+  // Explicitly skip all API routes
+  if (path.startsWith('/api/')) {
+    return NextResponse.next();
+  }
+  
   console.log('Middleware - Path:', path);
 
   // Create response
@@ -54,7 +60,7 @@ export async function middleware(request: NextRequest) {
   if (path === '/admin/login' && token) {
     const verified = await verifyTokenEdge(token);
     console.log('Middleware - On login page with token, payload:', verified);
-
+    
     if (verified) {
       console.log('Middleware - Redirecting to dashboard (already logged in)');
       return NextResponse.redirect(new URL('/admin/dashboard', request.url));
