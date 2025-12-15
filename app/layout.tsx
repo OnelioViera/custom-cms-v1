@@ -3,6 +3,9 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from 'sonner';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { headers } from 'next/headers';
+import Header from '@/components/public/Header';
+import Footer from '@/components/public/Footer';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -33,17 +36,27 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const pathname = headersList.get('x-pathname') || '';
+  
+  // Don't show header/footer on admin routes
+  const isAdminRoute = pathname.startsWith('/admin');
+  const isPreviewRoute = pathname.startsWith('/preview');
+  const shouldShowLayout = !isAdminRoute && !isPreviewRoute;
+
   return (
     <html lang="en">
       <body className={inter.className}>
         <Toaster position="top-right" />
         <ErrorBoundary>
+          {shouldShowLayout && <Header />}
           {children}
+          {shouldShowLayout && <Footer />}
         </ErrorBoundary>
       </body>
     </html>

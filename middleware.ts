@@ -9,6 +9,9 @@ export async function middleware(request: NextRequest) {
   // Create response
   let response = NextResponse.next();
 
+  // Add pathname to headers for layout
+  response.headers.set('x-pathname', path);
+
   // Add security headers
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
@@ -64,7 +67,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/admin/:path*',
-    '/api/:path*',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };
