@@ -3,8 +3,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { getDatabase } from '@/lib/mongodb';
 import { Project, Service } from '@/lib/models/Content';
-import Header from '@/components/public/Header';
-import Footer from '@/components/public/Footer';
 
 async function getHomeData() {
   try {
@@ -45,9 +43,7 @@ export default async function HomePage() {
   const { projects, services } = await getHomeData();
 
   return (
-    <>
-      <Header />
-      <main>
+    <main>
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-blue-900 to-blue-700 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
@@ -193,8 +189,6 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
-      </main>
-      <Footer />
-    </>
+    </main>
   );
 }
