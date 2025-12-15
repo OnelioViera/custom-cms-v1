@@ -11,7 +11,10 @@ async function getHomeData() {
     // Get featured projects
     const projectsCollection = db.collection<Project>('projects');
     const featuredProjects = await projectsCollection
-      .find({ featured: true, status: 'completed' })
+      .find({ 
+        featured: true, 
+        status: { $in: ['in-progress' as const, 'completed' as const] }
+      })
       .limit(3)
       .toArray();
 
