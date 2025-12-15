@@ -45,8 +45,17 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-gray-800 mt-8 pt-8 text-sm text-center text-gray-400">
-          <p>&copy; {new Date().getFullYear()} Lindsay Precast. All rights reserved.</p>
+        <div className="border-t border-gray-800 mt-8 pt-8 text-sm text-center">
+          <div className="flex items-center justify-center gap-4 text-gray-400">
+            <p>&copy; {new Date().getFullYear()} Lindsay Precast. All rights reserved.</p>
+            <span className="text-gray-700">|</span>
+            <Link 
+              href="/admin/login" 
+              className="hover:text-white transition-colors text-gray-500"
+            >
+              Admin
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
