@@ -58,6 +58,7 @@ export default function EditProjectPage() {
           status: project.status,
           featured: project.featured || false,
           content: project.content || '',
+          backgroundImage: project.backgroundImage || '',
         });
       }
     } catch (error) {
