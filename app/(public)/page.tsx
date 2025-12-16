@@ -11,7 +11,7 @@ async function getHomeData() {
     
     // Get settings
     const settingsCollection = db.collection('settings');
-    const settings = await settingsCollection.findOne({ _id: 'site-settings' });
+    const settings = await settingsCollection.findOne({ _id: 'site-settings' as any });
     const limit = settings?.featuredProjectsLimit || 3;
     
     // Get featured projects
@@ -21,11 +21,12 @@ async function getHomeData() {
         featured: true, 
         status: { $in: ['in-progress' as const, 'completed' as const] }
       })
-      .sort({ order: 1, updatedAt: -1 }) // Sort by order first, then by date
+      .sort({ order: 1, updatedAt: -1 })
       .limit(limit)
       .toArray();
 
     console.log('Featured projects found:', featuredProjects.length);
+    console.log('Featured projects data:', JSON.stringify(featuredProjects, null, 2));
     
     // Get active services
     const servicesCollection = db.collection<Service>('services');
