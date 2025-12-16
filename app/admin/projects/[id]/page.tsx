@@ -35,6 +35,7 @@ export default function EditProjectPage() {
     status: 'planning' as 'planning' | 'in-progress' | 'completed',
     featured: false,
     content: '',
+    backgroundImage: '',
   });
 
   useEffect(() => {
@@ -244,6 +245,21 @@ export default function EditProjectPage() {
             <Label htmlFor="featured" className="cursor-pointer">
               Feature this project on homepage
             </Label>
+          </div>
+
+          {/* Background Image (for featured carousel) */}
+          <div>
+            <Label htmlFor="backgroundImage">Background Image (Carousel)</Label>
+            <Input
+              id="backgroundImage"
+              type="url"
+              value={formData.backgroundImage || ''}
+              onChange={(e) => setFormData({ ...formData, backgroundImage: e.target.value })}
+              placeholder="https://example.com/background.jpg"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Optional: Custom background for featured carousel
+            </p>
           </div>
 
           {/* Content */}

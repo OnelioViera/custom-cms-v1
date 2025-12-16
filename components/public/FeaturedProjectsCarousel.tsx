@@ -13,6 +13,7 @@ interface Project {
   description: string;
   client?: string;
   images?: string[];
+  backgroundImage?: string; // New field for custom background
   status: string;
 }
 
@@ -23,6 +24,7 @@ interface FeaturedProjectsCarouselProps {
 export default function FeaturedProjectsCarousel({ projects }: FeaturedProjectsCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [isHovering, setIsHovering] = useState(false);
 
   // Auto-advance carousel every 5 seconds
   useEffect(() => {
@@ -53,15 +55,21 @@ export default function FeaturedProjectsCarousel({ projects }: FeaturedProjectsC
   if (projects.length === 0) return null;
 
   const currentProject = projects[currentIndex];
+  // Use backgroundImage if available, otherwise fall back to first image
+  const displayImage = currentProject.backgroundImage || currentProject.images?.[0];
 
   return (
     <div className="relative">
       {/* Main Carousel */}
-      <div className="relative h-[600px] bg-gradient-to-br from-blue-900 to-blue-700 rounded-2xl overflow-hidden">
+      <div 
+        className="relative h-[600px] bg-gradient-to-br from-blue-900 to-blue-700 rounded-2xl overflow-hidden group"
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+      >
         {/* Background Image */}
-        {currentProject.images && currentProject.images[0] ? (
+        {displayImage ? (
           <Image
-            src={currentProject.images[0]}
+            src={displayImage}
             alt={currentProject.title}
             fill
             className="object-cover opacity-30"
@@ -95,19 +103,23 @@ export default function FeaturedProjectsCarousel({ projects }: FeaturedProjectsC
           </div>
         </div>
 
-        {/* Navigation Arrows */}
+        {/* Navigation Arrows - Show on hover */}
         {projects.length > 1 && (
           <>
             <button
               onClick={goToPrevious}
-              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full backdrop-blur-sm transition-all"
+              className={`absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full backdrop-blur-sm transition-all duration-300 ${
+                isHovering ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+              }`}
               aria-label="Previous project"
             >
               <ChevronLeft className="w-6 h-6" />
             </button>
             <button
               onClick={goToNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full backdrop-blur-sm transition-all"
+              className={`absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full backdrop-blur-sm transition-all duration-300 ${
+                isHovering ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'
+              }`}
               aria-label="Next project"
             >
               <ChevronRight className="w-6 h-6" />
@@ -137,37 +149,41 @@ export default function FeaturedProjectsCarousel({ projects }: FeaturedProjectsC
       {/* Thumbnail Grid Below Carousel */}
       {projects.length > 1 && (
         <div className="mt-8 grid grid-cols-3 gap-4">
-          {projects.map((project, index) => (
-            <button
-              key={project._id}
-              onClick={() => goToSlide(index)}
-              className={`relative aspect-video rounded-lg overflow-hidden transition-all ${
-                index === currentIndex
-                  ? 'ring-4 ring-blue-600 scale-105'
-                  : 'opacity-60 hover:opacity-100'
-              }`}
-            >
-              {project.images && project.images[0] ? (
-                <Image
-                  src={project.images[0]}
-                  alt={project.title}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
-                  <span className="text-white text-sm font-semibold px-2 text-center">
+          {projects.map((project, index) => {
+            const thumbImage = project.backgroundImage || project.images?.[0];
+            
+            return (
+              <button
+                key={project._id}
+                onClick={() => goToSlide(index)}
+                className={`relative aspect-video rounded-lg overflow-hidden transition-all ${
+                  index === currentIndex
+                    ? 'ring-4 ring-blue-600 scale-105'
+                    : 'opacity-60 hover:opacity-100'
+                }`}
+              >
+                {thumbImage ? (
+                  <Image
+                    src={thumbImage}
+                    alt={project.title}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
+                    <span className="text-white text-sm font-semibold px-2 text-center">
+                      {project.title}
+                    </span>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
+                  <p className="text-white text-sm font-semibold truncate">
                     {project.title}
-                  </span>
+                  </p>
                 </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
-                <p className="text-white text-sm font-semibold truncate">
-                  {project.title}
-                </p>
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
