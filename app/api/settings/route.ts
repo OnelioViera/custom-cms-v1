@@ -7,7 +7,7 @@ export async function GET() {
     const db = await getDatabase();
     const settingsCollection = db.collection('settings');
     
-    let settings = await settingsCollection.findOne({ _id: 'site-settings' });
+    let settings = await settingsCollection.findOne({ _id: 'site-settings' as any });
     
     // Return default settings if none exist
     if (!settings) {
@@ -38,7 +38,7 @@ export async function PUT(request: NextRequest) {
     const settingsCollection = db.collection('settings');
 
     await settingsCollection.updateOne(
-      { _id: 'site-settings' },
+      { _id: 'site-settings' as any },
       { 
         $set: {
           featuredProjectsLimit: data.featuredProjectsLimit || 3,

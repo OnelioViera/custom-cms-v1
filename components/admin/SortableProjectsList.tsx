@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -169,7 +169,11 @@ export default function SortableProjectsList({
           order: index + 1,
         }));
 
-        onReorder(reorderedProjects);
+        // Call onReorder in next tick to avoid setState during render
+        setTimeout(() => {
+          onReorder(reorderedProjects);
+        }, 0);
+
         return reorderedProjects;
       });
     }
