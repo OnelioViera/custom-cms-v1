@@ -28,6 +28,7 @@ export interface Project {
   endDate?: Date;
   status: 'planning' | 'in-progress' | 'completed';
   featured: boolean;
+  order: number; // Add this line
   images?: string[];
   backgroundImage?: string; // Add this line
   createdAt: Date;

@@ -9,6 +9,11 @@ async function getHomeData() {
   try {
     const db = await getDatabase();
     
+    // Get settings
+    const settingsCollection = db.collection('settings');
+    const settings = await settingsCollection.findOne({ _id: 'site-settings' });
+    const limit = settings?.featuredProjectsLimit || 3;
+    
     // Get featured projects
     const projectsCollection = db.collection<Project>('projects');
     const featuredProjects = await projectsCollection
@@ -16,12 +21,12 @@ async function getHomeData() {
         featured: true, 
         status: { $in: ['in-progress' as const, 'completed' as const] }
       })
-      .limit(3)
+      .sort({ order: 1, updatedAt: -1 }) // Sort by order first, then by date
+      .limit(limit)
       .toArray();
 
     console.log('Featured projects found:', featuredProjects.length);
-    console.log('Featured projects data:', JSON.stringify(featuredProjects, null, 2));
-
+    
     // Get active services
     const servicesCollection = db.collection<Service>('services');
     const services = await servicesCollection
@@ -30,11 +35,24 @@ async function getHomeData() {
       .limit(6)
       .toArray();
 
+    const mappedProjects = featuredProjects.map(p => {
+      const mapped = {
+        _id: p._id?.toString() || '',
+        title: p.title,
+        slug: p.slug,
+        description: p.description || '',
+        client: p.client,
+        status: p.status,
+        featured: p.featured,
+        images: Array.isArray(p.images) ? p.images : [],
+        backgroundImage: p.backgroundImage || '',
+      };
+      console.log('Mapped project:', mapped.title, 'Images:', mapped.images, 'BG:', mapped.backgroundImage);
+      return mapped;
+    });
+
     return {
-      projects: featuredProjects.map(p => ({
-        ...p,
-        _id: p._id?.toString()
-      })),
+      projects: mappedProjects,
       services: services.map(s => ({
         ...s,
         _id: s._id?.toString()
