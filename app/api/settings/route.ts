@@ -1,20 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 
+interface SiteSettings {
+  _id: string;
+  featuredProjectsLimit: number;
+  updatedAt?: Date;
+}
+
 // GET settings
 export async function GET() {
   try {
     const db = await getDatabase();
-    const settingsCollection = db.collection('settings');
+    const settingsCollection = db.collection<SiteSettings>('settings');
     
     let settings = await settingsCollection.findOne({ _id: 'site-settings' as any });
     
     // Return default settings if none exist
     if (!settings) {
-      settings = {
+      const defaultSettings: SiteSettings = {
         _id: 'site-settings',
         featuredProjectsLimit: 3,
       };
+      
+      return NextResponse.json({
+        success: true,
+        settings: defaultSettings,
+      });
     }
 
     return NextResponse.json({
@@ -35,7 +46,7 @@ export async function PUT(request: NextRequest) {
   try {
     const data = await request.json();
     const db = await getDatabase();
-    const settingsCollection = db.collection('settings');
+    const settingsCollection = db.collection<SiteSettings>('settings');
 
     await settingsCollection.updateOne(
       { _id: 'site-settings' as any },
