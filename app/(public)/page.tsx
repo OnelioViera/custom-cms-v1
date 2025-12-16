@@ -19,6 +19,9 @@ async function getHomeData() {
       .limit(3)
       .toArray();
 
+    console.log('Featured projects found:', featuredProjects.length);
+    console.log('Featured projects data:', JSON.stringify(featuredProjects, null, 2));
+
     // Get active services
     const servicesCollection = db.collection<Service>('services');
     const services = await servicesCollection
@@ -45,6 +48,11 @@ async function getHomeData() {
 
 export default async function HomePage() {
   const { projects, services } = await getHomeData();
+  
+  console.log('HomePage - Projects received:', projects.length);
+  projects.forEach(p => {
+    console.log(`Project: ${p.title}, Images: ${p.images?.length || 0}, BG: ${p.backgroundImage ? 'Yes' : 'No'}`);
+  });
 
   return (
     <main>

@@ -68,15 +68,28 @@ export default function FeaturedProjectsCarousel({ projects }: FeaturedProjectsC
       >
         {/* Background Image */}
         {displayImage ? (
-          <Image
-            src={displayImage}
-            alt={currentProject.title}
-            fill
-            className="object-cover opacity-30"
-            priority
-          />
+          <>
+            <Image
+              src={displayImage}
+              alt={currentProject.title}
+              fill
+              className="object-cover opacity-30"
+              priority
+              onError={(e) => {
+                console.error('Image failed to load:', displayImage);
+                console.error('Error:', e);
+              }}
+            />
+            <div className="absolute top-4 left-4 bg-black/50 text-white px-2 py-1 text-xs rounded">
+              Image: {displayImage.substring(0, 50)}...
+            </div>
+          </>
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-700" />
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-700">
+            <div className="absolute top-4 left-4 bg-black/50 text-white px-2 py-1 text-xs rounded">
+              No image found
+            </div>
+          </div>
         )}
 
         {/* Content Overlay */}
