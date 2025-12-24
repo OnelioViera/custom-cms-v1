@@ -50,6 +50,7 @@ export interface TeamMember {
   linkedIn?: string;
   order: number;
   status: 'active' | 'inactive';
+  publishStatus: 'draft' | 'published';
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
