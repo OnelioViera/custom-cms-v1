@@ -10,8 +10,11 @@ async function getProjects() {
     const projectsCollection = db.collection<Project>('projects');
     
     const projects = await projectsCollection
-      .find({ status: { $in: ['completed', 'in-progress'] } })
-      .sort({ createdAt: -1 })
+      .find({ 
+        status: { $in: ['in-progress' as const, 'completed' as const] },
+        publishStatus: 'published'
+      })
+      .sort({ order: 1, updatedAt: -1 })
       .toArray();
 
     return projects.map(p => ({

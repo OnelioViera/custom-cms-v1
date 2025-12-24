@@ -59,6 +59,7 @@ export async function PUT(
       { 
         $set: {
           ...updateData,
+          publishStatus: data.publishStatus || 'draft',
           updatedAt: new Date()
         }
       }

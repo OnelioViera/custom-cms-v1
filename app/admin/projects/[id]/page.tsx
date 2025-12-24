@@ -1,30 +1,23 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
-import Link from 'next/link';
-import { toast } from 'sonner';
+import { useState, useEffect, use } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { ArrowLeft, Save, Eye, Upload, X, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { toast } from 'sonner';
 import RichTextEditor from '@/components/admin/RichTextEditor';
+import { ArrowLeft, Upload, X, Image as ImageIcon, Trash2, Eye, FileText, Save } from 'lucide-react';
+import Link from 'next/link';
 import Image from 'next/image';
+import ProjectPreview from '@/components/admin/ProjectPreview';
 
-export default function EditProjectPage() {
+export default function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
   const router = useRouter();
-  const params = useParams();
-  const [fetching, setFetching] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -35,17 +28,23 @@ export default function EditProjectPage() {
     client: '',
     startDate: '',
     endDate: '',
-    status: 'planning' as 'planning' | 'in-progress' | 'completed',
+    status: 'planning' as const,
+    publishStatus: 'draft' as 'draft' | 'published',
     featured: false,
     content: '',
     images: [] as string[],
     backgroundImage: '',
   });
 
-  const fetchProject = useCallback(async () => {
+  useEffect(() => {
+    fetchProject();
+  }, []);
+
+  const fetchProject = async () => {
     try {
-      const response = await fetch(`/api/projects/${params.id}`);
+      const response = await fetch(`/api/projects/${resolvedParams.id}`);
       const data = await response.json();
+
       if (data.success) {
         const project = data.project;
         setFormData({
@@ -56,7 +55,8 @@ export default function EditProjectPage() {
           startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '',
           endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : '',
           status: project.status,
-          featured: project.featured || false,
+          publishStatus: project.publishStatus || 'draft',
+          featured: project.featured,
           content: project.content || '',
           images: project.images || [],
           backgroundImage: project.backgroundImage || '',
@@ -69,13 +69,9 @@ export default function EditProjectPage() {
       console.error('Error fetching project:', error);
       toast.error('Failed to load project');
     } finally {
-      setFetching(false);
+      setLoading(false);
     }
-  }, [params.id, router]);
-
-  useEffect(() => {
-    fetchProject();
-  }, [fetchProject]);
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -179,22 +175,29 @@ export default function EditProjectPage() {
     toast.success('Background image removed');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async (newPublishStatus?: 'draft' | 'published') => {
     setSaving(true);
 
     try {
-      const response = await fetch(`/api/projects/${params.id}`, {
+      const saveData = {
+        ...formData,
+        publishStatus: newPublishStatus || formData.publishStatus,
+      };
+
+      const response = await fetch(`/api/projects/${resolvedParams.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(saveData),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        toast.success('Project updated successfully');
-        router.push('/admin/projects');
+        toast.success(`Project ${newPublishStatus === 'published' ? 'published' : 'saved'} successfully`);
+        setFormData(saveData);
+        if (newPublishStatus === 'published') {
+          router.push('/admin/projects');
+        }
       } else {
         toast.error(data.message || 'Failed to update project');
       }
@@ -214,7 +217,7 @@ export default function EditProjectPage() {
     setDeleting(true);
 
     try {
-      const response = await fetch(`/api/projects/${params.id}`, {
+      const response = await fetch(`/api/projects/${resolvedParams.id}`, {
         method: 'DELETE',
       });
 
@@ -234,85 +237,91 @@ export default function EditProjectPage() {
     }
   };
 
-  // Keyboard shortcut: Ctrl+S to save
-  const handleSaveShortcut = useCallback(() => {
-    if (!saving && !fetching) {
-      const form = document.querySelector('form');
-      if (form) {
-        form.requestSubmit();
-      }
-    }
-  }, [saving, fetching]);
-
-  useKeyboardShortcut(
-    { key: 's', ctrl: true, preventDefault: true },
-    handleSaveShortcut,
-    [saving, fetching]
-  );
-
-  // Keyboard shortcut: Escape to cancel
-  useKeyboardShortcut(
-    { key: 'Escape', preventDefault: false },
-    () => {
-      if (!saving && !fetching) {
-        router.push('/admin/projects');
-      }
-    },
-    [saving, fetching, router]
-  );
-
-  if (fetching) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Loading...</p>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-600">Loading project...</div>
       </div>
     );
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            onClick={() => router.push('/admin/projects')}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Projects
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">Edit Project</h1>
-            <p className="text-gray-600 mt-1">{formData.title}</p>
+      {/* Top Action Bar */}
+      <div className="bg-white border-b sticky top-0 z-10 mb-6">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-4">
+            <Link href="/admin/projects">
+              <Button variant="outline" size="icon">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold">Edit Project</h1>
+              <p className="text-sm text-gray-600">{formData.title}</p>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                formData.publishStatus === 'published' 
+                  ? 'bg-green-100 text-green-700' 
+                  : 'bg-yellow-100 text-yellow-700'
+              }`}>
+                {formData.publishStatus === 'published' ? '● Published' : '● Draft'}
+              </span>
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              {deleting ? 'Deleting...' : 'Delete'}
+            </Button>
+            
+            <Button
+              variant="outline"
+              onClick={() => handleSave('draft')}
+              disabled={saving}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Save as Draft
+            </Button>
+            
+            <Button
+              onClick={() => handleSave('published')}
+              disabled={saving}
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              {saving ? 'Publishing...' : 'Publish'}
+            </Button>
           </div>
         </div>
-        <Button
-          variant="destructive"
-          onClick={handleDelete}
-          disabled={deleting}
-        >
-          <Trash2 className="w-4 h-4 mr-2" />
-          {deleting ? 'Deleting...' : 'Delete Project'}
-        </Button>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-3xl">
-        <div className="bg-white rounded-lg border p-6 space-y-6">
-          {/* Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title">Project Title *</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              required
-            />
-          </div>
+      {/* Two Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Form */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white p-6 rounded-lg border space-y-6">
+            {/* Title */}
+            <div>
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+              />
+            </div>
 
-          {/* Slug */}
-          <div className="space-y-2">
-            <Label htmlFor="slug">URL Slug *</Label>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">/projects/</span>
+            {/* Slug */}
+            <div>
+              <Label htmlFor="slug">Slug *</Label>
               <Input
                 id="slug"
                 value={formData.slug}
@@ -320,220 +329,189 @@ export default function EditProjectPage() {
                 required
               />
             </div>
-          </div>
 
-          {/* Client */}
-          <div className="space-y-2">
-            <Label htmlFor="client">Client Name</Label>
-            <Input
-              id="client"
-              value={formData.client}
-              onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-            />
-          </div>
-
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Short Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
-            />
-          </div>
-
-          {/* Dates */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+            {/* Description */}
+            <div>
+              <Label htmlFor="description">Short Description *</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={3}
+                required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="endDate">End Date</Label>
+
+            {/* Client */}
+            <div>
+              <Label htmlFor="client">Client</Label>
               <Input
-                id="endDate"
-                type="date"
-                value={formData.endDate}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                id="client"
+                value={formData.client}
+                onChange={(e) => setFormData({ ...formData, client: e.target.value })}
               />
             </div>
-          </div>
 
-          {/* Status */}
-          <div className="space-y-2">
-            <Label htmlFor="status">Project Status *</Label>
-            <Select
-              value={formData.status}
-              onValueChange={(value: 'planning' | 'in-progress' | 'completed') =>
-                setFormData({ ...formData, status: value })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="planning">Planning</SelectItem>
-                <SelectItem value="in-progress">In Progress</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Featured */}
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="featured"
-              checked={formData.featured}
-              onCheckedChange={(checked) =>
-                setFormData({ ...formData, featured: checked as boolean })
-              }
-            />
-            <Label htmlFor="featured" className="cursor-pointer">
-              Feature this project on homepage
-            </Label>
-          </div>
-
-          {/* Content */}
-          <div className="space-y-2">
-            <Label htmlFor="content">Full Project Details</Label>
-            <RichTextEditor
-              content={formData.content}
-              onChange={(content) => setFormData({ ...formData, content })}
-              placeholder="Detailed project information, challenges, solutions..."
-            />
-          </div>
-
-          {/* Project Images */}
-          <div className="space-y-2">
-            <Label>Project Images</Label>
-            <div className="space-y-4">
-              {/* Image Grid */}
-              {formData.images.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {formData.images.map((image, index) => (
-                    <div key={index} className="relative aspect-video rounded-lg overflow-hidden border group">
-                      <Image
-                        src={image}
-                        alt={`Project image ${index + 1}`}
-                        fill
-                        className="object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        aria-label={`Remove image ${index + 1}`}
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Upload Button */}
+            {/* Dates */}
+            <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <input
-                  type="file"
-                  id="image-upload"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  aria-label="Upload project image"
+                <Label htmlFor="startDate">Start Date</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => document.getElementById('image-upload')?.click()}
-                  disabled={uploading}
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  {uploading ? 'Uploading...' : 'Upload Image'}
-                </Button>
-                <p className="text-sm text-gray-500 mt-1">
-                  Upload project gallery images (Max 5MB each)
-                </p>
+              </div>
+              <div>
+                <Label htmlFor="endDate">End Date</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                />
               </div>
             </div>
-          </div>
 
-          {/* Background Image for Carousel */}
-          <div className="space-y-2">
-            <Label>Background Image (Featured Carousel)</Label>
-            <div className="space-y-4">
-              {formData.backgroundImage && (
-                <div className="relative aspect-video rounded-lg overflow-hidden border max-w-md group">
-                  <Image
-                    src={formData.backgroundImage}
-                    alt="Background image"
-                    fill
-                    className="object-cover"
+            {/* Status */}
+            <div>
+              <Label htmlFor="status">Status *</Label>
+              <select
+                id="status"
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                className="w-full border rounded-md px-3 py-2"
+                required
+              >
+                <option value="planning">Planning</option>
+                <option value="in-progress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+
+            {/* Featured */}
+            <div className="flex items-center gap-2">
+              <Switch
+                id="featured"
+                checked={formData.featured}
+                onCheckedChange={(checked) => setFormData({ ...formData, featured: checked })}
+              />
+              <Label htmlFor="featured">Featured Project</Label>
+            </div>
+
+            {/* Content */}
+            <div>
+              <Label>Content</Label>
+              <RichTextEditor
+                content={formData.content}
+                onChange={(content) => setFormData({ ...formData, content })}
+              />
+            </div>
+
+            {/* Project Images */}
+            <div>
+              <Label>Project Images</Label>
+              <div className="space-y-4">
+                {formData.images.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {formData.images.map((image, index) => (
+                      <div key={index} className="relative aspect-video rounded-lg overflow-hidden border group">
+                        <Image
+                          src={image}
+                          alt={`Project image ${index + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div>
+                  <input
+                    type="file"
+                    id="image-upload"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
                   />
-                  <button
+                  <Button
                     type="button"
-                    onClick={removeBackgroundImage}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label="Remove background image"
+                    variant="outline"
+                    onClick={() => document.getElementById('image-upload')?.click()}
+                    disabled={uploading}
                   >
-                    <X className="w-4 h-4" />
-                  </button>
+                    <Upload className="w-4 h-4 mr-2" />
+                    {uploading ? 'Uploading...' : 'Upload Image'}
+                  </Button>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Upload project gallery images (Max 5MB each)
+                  </p>
                 </div>
-              )}
-
-              <div>
-                <input
-                  type="file"
-                  id="background-upload"
-                  accept="image/*"
-                  onChange={handleBackgroundImageUpload}
-                  className="hidden"
-                  aria-label="Upload background image"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => document.getElementById('background-upload')?.click()}
-                  disabled={uploading}
-                >
-                  <ImageIcon className="w-4 h-4 mr-2" />
-                  {uploading ? 'Uploading...' : formData.backgroundImage ? 'Change Background' : 'Upload Background'}
-                </Button>
-                <p className="text-sm text-gray-500 mt-1">
-                  Optional: Custom background for featured carousel (Max 5MB)
-                </p>
               </div>
             </div>
-          </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-4 pt-6 border-t">
-            <Button type="submit" disabled={saving}>
-              <Save className="w-4 h-4 mr-2" />
-              {saving ? 'Saving...' : 'Save Changes'}
-              <span className="ml-2 text-xs opacity-60">Ctrl+S</span>
-            </Button>
-            <Link href={`/preview/project/${params.id}`} target="_blank">
-              <Button type="button" variant="outline">
-                <Eye className="w-4 h-4 mr-2" />
-                Preview
-              </Button>
-            </Link>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push('/admin/projects')}
-            >
-              Cancel
-            </Button>
+            {/* Background Image for Carousel */}
+            <div>
+              <Label>Background Image (Featured Carousel)</Label>
+              <div className="space-y-4">
+                {formData.backgroundImage && (
+                  <div className="relative aspect-video rounded-lg overflow-hidden border max-w-md group">
+                    <Image
+                      src={formData.backgroundImage}
+                      alt="Background image"
+                      fill
+                      className="object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeBackgroundImage}
+                      className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                <div>
+                  <input
+                    type="file"
+                    id="background-upload"
+                    accept="image/*"
+                    onChange={handleBackgroundImageUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('background-upload')?.click()}
+                    disabled={uploading}
+                  >
+                    <ImageIcon className="w-4 h-4 mr-2" />
+                    {uploading ? 'Uploading...' : formData.backgroundImage ? 'Change Background' : 'Upload Background'}
+                  </Button>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Optional: Custom background for featured carousel (Max 5MB)
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </form>
+
+        {/* Right Column - Live Preview */}
+        <div className="lg:col-span-1">
+          <ProjectPreview project={formData} />
+        </div>
+      </div>
     </div>
   );
 }

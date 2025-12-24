@@ -27,6 +27,7 @@ export interface Project {
   startDate?: Date;
   endDate?: Date;
   status: 'planning' | 'in-progress' | 'completed';
+  publishStatus: 'draft' | 'published';
   featured: boolean;
   order: number; // Add this line
   images?: string[];

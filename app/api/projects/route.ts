@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
 
       const project: Omit<Project, '_id'> = {
         ...data,
+        publishStatus: data.publishStatus || 'draft',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
