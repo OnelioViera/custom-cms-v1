@@ -22,6 +22,8 @@ interface SiteSettings {
       textColor: string;
     };
     backgroundImage?: string;
+    backgroundVideo?: string;
+    backgroundType?: 'color' | 'image' | 'video';
     backgroundColor?: string;
     imageSettings?: {
       opacity: number;
@@ -63,6 +65,8 @@ export async function GET() {
             textColor: '#ffffff',
           },
           backgroundImage: '',
+          backgroundVideo: '',
+          backgroundType: 'color',
           backgroundColor: '#1e40af',
           imageSettings: {
             opacity: 30,
@@ -125,6 +129,8 @@ export async function PUT(request: NextRequest) {
           textColor: data.hero.secondaryButton?.textColor || '#ffffff',
         },
         backgroundImage: data.hero.backgroundImage || '',
+        backgroundVideo: data.hero.backgroundVideo || '',
+        backgroundType: data.hero.backgroundType || 'color',
         backgroundColor: data.hero.backgroundColor || '#1e40af',
         imageSettings: {
           opacity: data.hero.imageSettings?.opacity ?? 30,

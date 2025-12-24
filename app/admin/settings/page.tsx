@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Settings, Edit, X } from 'lucide-react';
+import { Settings, Edit, X, Upload } from 'lucide-react';
 import Image from 'next/image';
 import ImageEditor, { ImageSettings } from '@/components/admin/ImageEditor';
 
@@ -19,6 +19,7 @@ interface Page {
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [availablePages, setAvailablePages] = useState<Page[]>([]);
   const [settings, setSettings] = useState({
@@ -41,6 +42,8 @@ export default function SettingsPage() {
         textColor: '#ffffff',
       },
       backgroundImage: '',
+      backgroundVideo: '',
+      backgroundType: 'color' as 'color' | 'image' | 'video',
       backgroundColor: '#1e40af',
       imageSettings: {
         opacity: 30,
@@ -82,6 +85,8 @@ export default function SettingsPage() {
               textColor: data.settings.hero?.secondaryButton?.textColor || '#ffffff',
             },
             backgroundImage: data.settings.hero?.backgroundImage || '',
+            backgroundVideo: data.settings.hero?.backgroundVideo || '',
+            backgroundType: data.settings.hero?.backgroundType || 'color',
             backgroundColor: data.settings.hero?.backgroundColor || '#1e40af',
             imageSettings: {
               opacity: data.settings.hero?.imageSettings?.opacity ?? 30,
@@ -138,6 +143,63 @@ export default function SettingsPage() {
       },
     }));
     toast.success('Hero background removed');
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('video/')) {
+      toast.error('Please upload a video file');
+      return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('Video must be less than 50MB');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSettings(prev => ({
+          ...prev,
+          hero: {
+            ...prev.hero,
+            backgroundVideo: data.url,
+          },
+        }));
+        toast.success('Video uploaded successfully');
+      } else {
+        toast.error(data.message || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload video');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeHeroVideo = () => {
+    setSettings(prev => ({
+      ...prev,
+      hero: {
+        ...prev.hero,
+        backgroundVideo: '',
+      },
+    }));
+    toast.success('Video removed');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -516,62 +578,181 @@ export default function SettingsPage() {
               </p>
             </div>
 
-            {/* Background Image */}
-            <div>
-              <Label>Hero Background Image</Label>
-              <div className="space-y-4">
-                {settings.hero.backgroundImage && (
-                  <div 
-                    className="relative h-64 rounded-lg overflow-hidden border group"
-                    style={{ backgroundColor: settings.hero.backgroundColor }}
-                  >
-                    <div 
-                      className="absolute inset-0"
-                      style={{ opacity: (settings.hero.imageSettings?.opacity || 30) / 100 }}
-                    >
-                      <Image
-                        src={settings.hero.backgroundImage}
-                        alt="Hero background"
-                        fill
-                        className={`object-cover ${getObjectPosition()}`}
-                        style={{
-                          transform: `scale(${(settings.hero.imageSettings?.scale || 100) / 100})`,
-                        }}
-                      />
-                    </div>
-                    <div className="relative h-full flex items-center justify-center text-white">
-                      <div className="text-center p-8">
-                        <h3 className="text-2xl font-bold">Preview</h3>
-                        <p className="text-sm">Opacity: {settings.hero.imageSettings?.opacity}% | Position: {settings.hero.imageSettings?.position} | Scale: {settings.hero.imageSettings?.scale}%</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={removeHeroImage}
-                      className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      aria-label="Remove hero background image"
-                      title="Remove hero background image"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  <Button
+            {/* Background Type Selector */}
+            <div className="mb-6">
+              <Label>Background Type</Label>
+              <div className="grid grid-cols-3 gap-2 mt-2">
+                {(['color', 'image', 'video'] as const).map((type) => (
+                  <button
+                    key={type}
                     type="button"
-                    variant="outline"
-                    onClick={() => setShowImageEditor(true)}
+                    onClick={() => setSettings({
+                      ...settings,
+                      hero: { ...settings.hero, backgroundType: type }
+                    })}
+                    className={`px-4 py-2 rounded-md border transition-colors ${
+                      settings.hero.backgroundType === type
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-blue-300'
+                    }`}
                   >
-                    <Edit className="w-4 h-4 mr-2" />
-                    {settings.hero.backgroundImage ? 'Edit Background' : 'Add Background'}
-                  </Button>
-                </div>
-                <p className="text-sm text-gray-500">
-                  Upload and customize the hero background image
-                </p>
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </button>
+                ))}
               </div>
+              <p className="text-sm text-gray-500 mt-1">
+                Choose background type: solid color, image, or video
+              </p>
             </div>
+
+            {/* Background Image Upload - Show only if type is 'image' */}
+            {settings.hero.backgroundType === 'image' && (
+              <div className="mb-6">
+                <Label>Hero Background Image</Label>
+                <div className="space-y-4">
+                  {settings.hero.backgroundImage && (
+                    <div 
+                      className="relative h-64 rounded-lg overflow-hidden border group"
+                      style={{ backgroundColor: settings.hero.backgroundColor }}
+                    >
+                      <div 
+                        className="absolute inset-0"
+                        style={{ opacity: (settings.hero.imageSettings?.opacity || 30) / 100 }}
+                      >
+                        <Image
+                          src={settings.hero.backgroundImage}
+                          alt="Hero background"
+                          fill
+                          className={`object-cover ${getObjectPosition()}`}
+                          style={{
+                            transform: `scale(${(settings.hero.imageSettings?.scale || 100) / 100})`,
+                          }}
+                        />
+                      </div>
+                      <div className="relative h-full flex items-center justify-center text-white">
+                        <div className="text-center p-8">
+                          <h3 className="text-2xl font-bold">Preview</h3>
+                          <p className="text-sm">Opacity: {settings.hero.imageSettings?.opacity}% | Position: {settings.hero.imageSettings?.position} | Scale: {settings.hero.imageSettings?.scale}%</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeHeroImage}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="Remove hero background image"
+                        title="Remove hero background image"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowImageEditor(true)}
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      {settings.hero.backgroundImage ? 'Edit Background' : 'Add Background'}
+                    </Button>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Upload and customize the hero background image
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Background Video Upload - Show only if type is 'video' */}
+            {settings.hero.backgroundType === 'video' && (
+              <div className="mb-6">
+                <Label>Hero Background Video</Label>
+                <div className="space-y-4">
+                  {settings.hero.backgroundVideo && (
+                    <div className="relative h-64 rounded-lg overflow-hidden border bg-black group">
+                      <video
+                        src={settings.hero.backgroundVideo}
+                        className="w-full h-full object-cover"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                      />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <div className="text-white text-center">
+                          <p className="text-sm">Video Preview (Opacity: {settings.hero.imageSettings?.opacity || 30}%)</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeHeroVideo}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="Remove hero background video"
+                        title="Remove hero background video"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+
+                  <div>
+                    <input
+                      type="file"
+                      id="video-upload"
+                      accept="video/*"
+                      onChange={handleVideoUpload}
+                      className="hidden"
+                      title="Upload hero background video"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('video-upload')?.click()}
+                      disabled={uploading}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {uploading ? 'Uploading...' : settings.hero.backgroundVideo ? 'Change Video' : 'Upload Video'}
+                    </Button>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Upload background video (Max 50MB). Recommended: MP4 format, 1920x1080
+                    </p>
+                  </div>
+
+                  {/* Opacity control for video */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label>Video Opacity</Label>
+                      <span className="text-sm text-gray-600">{settings.hero.imageSettings?.opacity || 30}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      value={settings.hero.imageSettings?.opacity || 30}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        hero: {
+                          ...settings.hero,
+                          imageSettings: {
+                            ...settings.hero.imageSettings,
+                            opacity: parseInt(e.target.value),
+                          }
+                        }
+                      })}
+                      className="w-full"
+                      title="Video opacity control"
+                      aria-label="Video opacity"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      Control video transparency (lower = more visible text)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
 

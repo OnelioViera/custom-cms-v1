@@ -32,6 +32,8 @@ async function getHomeData() {
         textColor: '#ffffff',
       },
       backgroundImage: '',
+      backgroundVideo: '',
+      backgroundType: 'color',
       backgroundColor: '#1e40af',
       imageSettings: {
         opacity: 30,
@@ -100,6 +102,8 @@ async function getHomeData() {
           textColor: '#ffffff',
         },
         backgroundImage: '',
+        backgroundVideo: '',
+        backgroundType: 'color',
         backgroundColor: '#1e40af',
         imageSettings: {
           opacity: 30,
@@ -118,13 +122,28 @@ export default async function HomePage() {
 
   return (
     <main>
-      {/* Hero Section - Taller with Customizable Buttons */}
+      {/* Hero Section - With Video Support */}
       <section 
         className="relative text-white overflow-hidden min-h-[600px] md:min-h-[700px] flex items-center"
         style={{ backgroundColor: hero.backgroundColor || '#1e40af' }}
       >
-        {/* Background Image with Settings */}
-        {hero.backgroundImage && (
+        {/* Background Video */}
+        {hero.backgroundType === 'video' && hero.backgroundVideo && (
+          <div className="absolute inset-0">
+            <video
+              src={hero.backgroundVideo}
+              className="w-full h-full object-cover"
+              autoPlay
+              loop
+              muted
+              playsInline
+              style={{ opacity: (hero.imageSettings?.opacity || 30) / 100 }}
+            />
+          </div>
+        )}
+
+        {/* Background Image */}
+        {hero.backgroundType === 'image' && hero.backgroundImage && (
           <div 
             className="absolute inset-0"
             style={{ opacity: (hero.imageSettings?.opacity || 30) / 100 }}
