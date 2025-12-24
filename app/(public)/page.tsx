@@ -13,6 +13,32 @@ async function getHomeData() {
     const settingsCollection = db.collection('settings');
     const settings = await settingsCollection.findOne({ _id: 'site-settings' as any });
     const limit = settings?.featuredProjectsLimit || 3;
+    // Default hero settings
+    const hero = settings?.hero || {
+      title: 'Building the Future of Renewable Energy Infrastructure',
+      subtitle: 'Expert precast concrete solutions for utility-scale battery storage, solar installations, and critical infrastructure projects.',
+      primaryButton: {
+        enabled: true,
+        text: 'View Our Projects',
+        link: '/projects',
+        backgroundColor: '#ffffff',
+        textColor: '#1e40af',
+      },
+      secondaryButton: {
+        enabled: true,
+        text: 'Get in Touch',
+        link: '/contact',
+        backgroundColor: 'transparent',
+        textColor: '#ffffff',
+      },
+      backgroundImage: '',
+      backgroundColor: '#1e40af',
+      imageSettings: {
+        opacity: 30,
+        position: 'center',
+        scale: 100,
+      },
+    };
     
     // Get featured projects
     const projectsCollection = db.collection<Project>('projects');
@@ -25,9 +51,6 @@ async function getHomeData() {
       .limit(limit)
       .toArray();
 
-    console.log('Featured projects found:', featuredProjects.length);
-    console.log('Featured projects data:', JSON.stringify(featuredProjects, null, 2));
-    
     // Get active services
     const servicesCollection = db.collection<Service>('services');
     const services = await servicesCollection
@@ -36,23 +59,20 @@ async function getHomeData() {
       .limit(6)
       .toArray();
 
-    const mappedProjects = featuredProjects.map(p => {
-      const mapped = {
-        _id: p._id?.toString() || '',
-        title: p.title,
-        slug: p.slug,
-        description: p.description || '',
-        client: p.client,
-        status: p.status,
-        featured: p.featured,
-        images: Array.isArray(p.images) ? p.images : [],
-        backgroundImage: p.backgroundImage || '',
-      };
-      console.log('Mapped project:', mapped.title, 'Images:', mapped.images, 'BG:', mapped.backgroundImage);
-      return mapped;
-    });
+    const mappedProjects = featuredProjects.map(p => ({
+      _id: p._id?.toString() || '',
+      title: p.title,
+      slug: p.slug,
+      description: p.description || '',
+      client: p.client,
+      status: p.status,
+      featured: p.featured,
+      images: Array.isArray(p.images) ? p.images : [],
+      backgroundImage: p.backgroundImage || '',
+    }));
 
     return {
+      hero,
       projects: mappedProjects,
       services: services.map(s => ({
         ...s,
@@ -61,42 +81,117 @@ async function getHomeData() {
     };
   } catch (error) {
     console.error('Error fetching home data:', error);
-    return { projects: [], services: [] };
+    return { 
+      hero: {
+        title: 'Building the Future of Renewable Energy Infrastructure',
+        subtitle: 'Expert precast concrete solutions for utility-scale battery storage, solar installations, and critical infrastructure projects.',
+        primaryButton: {
+          enabled: true,
+          text: 'View Our Projects',
+          link: '/projects',
+          backgroundColor: '#ffffff',
+          textColor: '#1e40af',
+        },
+        secondaryButton: {
+          enabled: true,
+          text: 'Get in Touch',
+          link: '/contact',
+          backgroundColor: 'transparent',
+          textColor: '#ffffff',
+        },
+        backgroundImage: '',
+        backgroundColor: '#1e40af',
+        imageSettings: {
+          opacity: 30,
+          position: 'center',
+          scale: 100,
+        },
+      },
+      projects: [], 
+      services: [] 
+    };
   }
 }
 
 export default async function HomePage() {
-  const { projects, services } = await getHomeData();
-  
-  console.log('HomePage - Projects received:', projects.length);
-  projects.forEach(p => {
-    console.log(`Project: ${p.title}, Images: ${p.images?.length || 0}, BG: ${p.backgroundImage ? 'Yes' : 'No'}`);
-  });
+  const { hero, projects, services } = await getHomeData();
 
   return (
     <main>
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-900 to-blue-700 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+      {/* Hero Section - Taller with Customizable Buttons */}
+      <section 
+        className="relative text-white overflow-hidden min-h-[600px] md:min-h-[700px] flex items-center"
+        style={{ backgroundColor: hero.backgroundColor || '#1e40af' }}
+      >
+        {/* Background Image with Settings */}
+        {hero.backgroundImage && (
+          <div 
+            className="absolute inset-0"
+            style={{ opacity: (hero.imageSettings?.opacity || 30) / 100 }}
+          >
+            <Image
+              src={hero.backgroundImage}
+              alt="Hero background"
+              fill
+              className={`object-cover ${
+                hero.imageSettings?.position === 'top' ? 'object-top' :
+                hero.imageSettings?.position === 'bottom' ? 'object-bottom' :
+                'object-center'
+              }`}
+              style={{
+                transform: `scale(${(hero.imageSettings?.scale || 100) / 100})`,
+              }}
+              priority
+            />
+          </div>
+        )}
+        
+        {/* Content */}
+        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32">
           <div className="max-w-3xl">
-            <h1 className="text-5xl font-bold mb-6">
-              Building the Future of Renewable Energy Infrastructure
+            <h1 className="text-5xl md:text-6xl font-bold mb-6">
+              {hero.title}
             </h1>
-            <p className="text-xl text-blue-100 mb-8">
-              Expert precast concrete solutions for utility-scale battery storage, 
-              solar installations, and critical infrastructure projects.
+            <p className="text-xl md:text-2xl mb-8" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+              {hero.subtitle}
             </p>
-            <div className="flex gap-4">
-              <Link href="/projects">
-                <Button size="lg" variant="default" className="bg-white text-blue-900 hover:bg-blue-50">
-                  View Our Projects
-                </Button>
-              </Link>
-              <Link href="/contact">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-blue-800">
-                  Get in Touch
-                </Button>
-              </Link>
+            
+            {/* Dynamic Buttons */}
+            <div className="flex flex-wrap gap-4">
+              {hero.primaryButton?.enabled && (
+                <Link href={hero.primaryButton.link}>
+                  <Button 
+                    size="lg" 
+                    style={{
+                      backgroundColor: hero.primaryButton.backgroundColor,
+                      color: hero.primaryButton.textColor,
+                      border: hero.primaryButton.backgroundColor === 'transparent' 
+                        ? `2px solid ${hero.primaryButton.textColor}` 
+                        : 'none',
+                    }}
+                    className="hover:opacity-90 transition-opacity"
+                  >
+                    {hero.primaryButton.text}
+                  </Button>
+                </Link>
+              )}
+              
+              {hero.secondaryButton?.enabled && (
+                <Link href={hero.secondaryButton.link}>
+                  <Button 
+                    size="lg"
+                    variant="outline"
+                    style={{
+                      backgroundColor: hero.secondaryButton.backgroundColor,
+                      color: hero.secondaryButton.textColor,
+                      borderColor: hero.secondaryButton.textColor,
+                    }}
+                    className="hover:opacity-90 transition-opacity"
+                  >
+                    {hero.secondaryButton.text}
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
