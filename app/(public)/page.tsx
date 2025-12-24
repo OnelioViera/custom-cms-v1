@@ -56,7 +56,10 @@ async function getHomeData() {
     // Get active services
     const servicesCollection = db.collection<Service>('services');
     const services = await servicesCollection
-      .find({ status: 'active' })
+      .find({ 
+        status: 'active',
+        publishStatus: 'published'
+      })
       .sort({ order: 1 })
       .limit(6)
       .toArray();

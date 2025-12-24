@@ -1,81 +1,79 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { Service } from '@/lib/models/Content';
 import { ObjectId } from 'mongodb';
+import { cache } from '@/lib/cache';
 
 // GET all services
 export async function GET() {
   try {
+    const cached = cache.get('services:all');
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
     const db = await getDatabase();
-    const servicesCollection = db.collection<Service>('services');
+    const servicesCollection = db.collection('services');
     
     const services = await servicesCollection
       .find({})
       .sort({ order: 1 })
       .toArray();
 
-    return NextResponse.json({
+    const result = {
       success: true,
-      services: services.map(service => ({
-        ...service,
-        _id: service._id?.toString()
+      services: services.map(s => ({
+        ...s,
+        _id: s._id?.toString()
       }))
-    });
+    };
+
+    cache.set('services:all', result);
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching services:', error);
-    return NextResponse.json({
-      success: false,
-      message: 'Failed to fetch services'
-    }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: 'Failed to fetch services' },
+      { status: 500 }
+    );
   }
 }
 
-// POST create new service
-export async function POST(request: Request) {
+// POST - Create new service
+export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const data = await request.json();
     const db = await getDatabase();
-    const servicesCollection = db.collection<Service>('services');
+    const servicesCollection = db.collection('services');
 
-    // Check if slug already exists
-    const existingService = await servicesCollection.findOne({ slug: body.slug });
-    if (existingService) {
-      return NextResponse.json({
-        success: false,
-        message: 'A service with this slug already exists'
-      }, { status: 400 });
-    }
-
-    const newService: Service = {
-      title: body.title,
-      slug: body.slug,
-      shortDescription: body.shortDescription || '',
-      fullDescription: body.fullDescription || '',
-      icon: body.icon,
-      image: body.image,
-      features: body.features || [],
-      order: body.order || 0,
-      status: body.status || 'active',
+    const newService = {
+      title: data.title,
+      slug: data.slug,
+      shortDescription: data.shortDescription || '',
+      content: data.content || '',
+      status: data.status || 'active',
+      publishStatus: data.publishStatus || 'draft',
+      order: data.order || 0,
       createdAt: new Date(),
       updatedAt: new Date(),
-      createdBy: body.createdBy || 'admin'
     };
 
     const result = await servicesCollection.insertOne(newService);
 
+    cache.delete('services:all');
+    cache.delete('services:published');
+
     return NextResponse.json({
       success: true,
       message: 'Service created successfully',
-      service: {
-        ...newService,
-        _id: result.insertedId.toString()
-      }
+      serviceId: result.insertedId.toString(),
     });
   } catch (error) {
     console.error('Error creating service:', error);
-    return NextResponse.json({
-      success: false,
-      message: 'Failed to create service'
-    }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: 'Failed to create service' },
+      { status: 500 }
+    );
   }
 }

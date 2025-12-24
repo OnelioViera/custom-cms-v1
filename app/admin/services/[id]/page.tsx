@@ -1,41 +1,32 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
+import { useState, useEffect, use } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { ArrowLeft, Save, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import RichTextEditor from '@/components/admin/RichTextEditor';
-import ImageUpload from '@/components/admin/ImageUpload';
+import { ArrowLeft, Trash2, Eye, FileText } from 'lucide-react';
+import Link from 'next/link';
+import ServicePreview from '@/components/admin/ServicePreview';
 
-export default function EditServicePage() {
+export default function EditServicePage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
   const router = useRouter();
-  const params = useParams();
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
     shortDescription: '',
-    fullDescription: '',
-    icon: '',
-    image: '',
-    features: [] as string[],
+    content: '',
+    status: 'active' as const,
+    publishStatus: 'draft' as 'draft' | 'published',
     order: 0,
-    status: 'active' as 'active' | 'inactive',
   });
-  const [newFeature, setNewFeature] = useState('');
 
   useEffect(() => {
     fetchService();
@@ -43,62 +34,55 @@ export default function EditServicePage() {
 
   const fetchService = async () => {
     try {
-      const response = await fetch(`/api/services/${params.id}`);
+      const response = await fetch(`/api/services/${resolvedParams.id}`);
       const data = await response.json();
+
       if (data.success) {
         const service = data.service;
         setFormData({
           title: service.title,
           slug: service.slug,
           shortDescription: service.shortDescription || '',
-          fullDescription: service.fullDescription || '',
-          icon: service.icon || '',
-          image: service.image || '',
-          features: service.features || [],
-          order: service.order || 0,
+          content: service.content || service.fullDescription || '',
           status: service.status,
+          publishStatus: service.publishStatus || 'draft',
+          order: service.order || 0,
         });
+      } else {
+        toast.error('Service not found');
+        router.push('/admin/services');
       }
     } catch (error) {
       console.error('Error fetching service:', error);
+      toast.error('Failed to load service');
     } finally {
-      setFetching(false);
+      setLoading(false);
     }
   };
 
-  const addFeature = () => {
-    if (newFeature.trim()) {
-      setFormData({
-        ...formData,
-        features: [...formData.features, newFeature.trim()]
-      });
-      setNewFeature('');
-    }
-  };
-
-  const removeFeature = (index: number) => {
-    setFormData({
-      ...formData,
-      features: formData.features.filter((_, i) => i !== index)
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const handleSave = async (newPublishStatus?: 'draft' | 'published') => {
+    setSaving(true);
 
     try {
-      const response = await fetch(`/api/services/${params.id}`, {
+      const saveData = {
+        ...formData,
+        publishStatus: newPublishStatus || formData.publishStatus,
+      };
+
+      const response = await fetch(`/api/services/${resolvedParams.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(saveData),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        toast.success('Service updated successfully');
-        router.push('/admin/services');
+        toast.success(`Service ${newPublishStatus === 'published' ? 'published' : 'saved'} successfully`);
+        setFormData(saveData);
+        if (newPublishStatus === 'published') {
+          router.push('/admin/services');
+        }
       } else {
         toast.error(data.message || 'Failed to update service');
       }
@@ -106,77 +90,123 @@ export default function EditServicePage() {
       console.error('Error updating service:', error);
       toast.error('Failed to update service');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  // Keyboard shortcut: Ctrl+S to save
-  const handleSaveShortcut = useCallback((e: KeyboardEvent) => {
-    if (!loading) {
-      const form = document.querySelector('form');
-      if (form) {
-        form.requestSubmit();
-      }
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this service? This action cannot be undone.')) {
+      return;
     }
-  }, [loading]);
 
-  useKeyboardShortcut(
-    { key: 's', ctrl: true, preventDefault: true },
-    handleSaveShortcut,
-    [loading]
-  );
+    setDeleting(true);
 
-  // Keyboard shortcut: Escape to cancel
-  useKeyboardShortcut(
-    { key: 'Escape', preventDefault: false },
-    () => {
-      if (!loading) {
+    try {
+      const response = await fetch(`/api/services/${resolvedParams.id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Service deleted successfully');
         router.push('/admin/services');
+      } else {
+        toast.error(data.message || 'Failed to delete service');
       }
-    },
-    [loading, router]
-  );
+    } catch (error) {
+      console.error('Error deleting service:', error);
+      toast.error('Failed to delete service');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
-  if (fetching) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Loading...</p>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-600">Loading service...</div>
       </div>
     );
   }
 
   return (
     <div>
-      <div className="mb-8">
-        <Button
-          variant="ghost"
-          onClick={() => router.push('/admin/services')}
-          className="mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Services
-        </Button>
-        <h1 className="text-3xl font-bold">Edit Service</h1>
-      </div>
-
-      <form onSubmit={handleSubmit} className="max-w-3xl">
-        <div className="bg-white rounded-lg border p-6 space-y-6">
-          {/* Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title">Service Title *</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              required
-            />
+      {/* Top Action Bar */}
+      <div className="bg-white border-b sticky top-0 z-10 mb-6">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-4">
+            <Link href="/admin/services">
+              <Button variant="outline" size="icon">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold">Edit Service</h1>
+              <p className="text-sm text-gray-600">{formData.title}</p>
+            </div>
           </div>
 
-          {/* Slug */}
-          <div className="space-y-2">
-            <Label htmlFor="slug">URL Slug *</Label>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">/services/</span>
+          {/* Action Buttons */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                formData.publishStatus === 'published' 
+                  ? 'bg-green-100 text-green-700' 
+                  : 'bg-yellow-100 text-yellow-700'
+              }`}>
+                {formData.publishStatus === 'published' ? '● Published' : '● Draft'}
+              </span>
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              {deleting ? 'Deleting...' : 'Delete'}
+            </Button>
+            
+            <Button
+              variant="outline"
+              onClick={() => handleSave('draft')}
+              disabled={saving}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Save as Draft
+            </Button>
+            
+            <Button
+              onClick={() => handleSave('published')}
+              disabled={saving}
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              {saving ? 'Publishing...' : 'Publish'}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Two Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Form */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white p-6 rounded-lg border space-y-6">
+            {/* Title */}
+            <div>
+              <Label htmlFor="title">Service Title *</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+              />
+            </div>
+
+            {/* Slug */}
+            <div>
+              <Label htmlFor="slug">Slug *</Label>
               <Input
                 id="slug"
                 value={formData.slug}
@@ -184,93 +214,36 @@ export default function EditServicePage() {
                 required
               />
             </div>
-          </div>
 
-          {/* Short Description */}
-          <div className="space-y-2">
-            <Label htmlFor="shortDescription">Short Description *</Label>
-            <Textarea
-              id="shortDescription"
-              value={formData.shortDescription}
-              onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
-              rows={2}
-              required
-            />
-          </div>
-
-          {/* Full Description */}
-          <div className="space-y-2">
-            <Label htmlFor="fullDescription">Full Description</Label>
-            <RichTextEditor
-              content={formData.fullDescription}
-              onChange={(fullDescription) => setFormData({ ...formData, fullDescription })}
-              placeholder="Detailed service information..."
-            />
-          </div>
-
-          {/* Features */}
-          <div className="space-y-2">
-            <Label>Key Features</Label>
-            <div className="flex gap-2">
-              <Input
-                value={newFeature}
-                onChange={(e) => setNewFeature(e.target.value)}
-                placeholder="Add a feature..."
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addFeature();
-                  }
-                }}
-              />
-              <Button type="button" onClick={addFeature}>
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
-            {formData.features.length > 0 && (
-              <div className="space-y-2 mt-4">
-                {formData.features.map((feature, index) => (
-                  <div key={index} className="flex items-center gap-2 bg-gray-50 p-2 rounded">
-                    <span className="flex-1">{feature}</span>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removeFeature(index)}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Icon & Image */}
-          <div className="border-t pt-6 space-y-4">
-            <h3 className="font-semibold">Media</h3>
-            
-            <div className="space-y-2">
-              <Label htmlFor="icon">Icon URL</Label>
-              <Input
-                id="icon"
-                type="url"
-                value={formData.icon}
-                onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+            {/* Short Description */}
+            <div>
+              <Label htmlFor="shortDescription">Short Description *</Label>
+              <Textarea
+                id="shortDescription"
+                value={formData.shortDescription}
+                onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
+                rows={3}
+                required
               />
             </div>
 
-            <ImageUpload
-              value={formData.image}
-              onChange={(image) => setFormData({ ...formData, image })}
-              label="Hero Image"
-              aspectRatio={16 / 9}
-            />
-          </div>
+            {/* Status */}
+            <div>
+              <Label htmlFor="status">Status *</Label>
+              <select
+                id="status"
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                className="w-full border rounded-md px-3 py-2"
+                required
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
 
-          {/* Order & Status */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            {/* Order */}
+            <div>
               <Label htmlFor="order">Display Order</Label>
               <Input
                 id="order"
@@ -278,43 +251,27 @@ export default function EditServicePage() {
                 value={formData.order}
                 onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })}
               />
+              <p className="text-sm text-gray-500 mt-1">
+                Lower numbers appear first
+              </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value: 'active' | 'inactive') =>
-                  setFormData({ ...formData, status: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-4 pt-6 border-t">
-            <Button type="submit" disabled={loading}>
-              <Save className="w-4 h-4 mr-2" />
-              {loading ? 'Saving...' : 'Save Changes'}
-              <span className="ml-2 text-xs opacity-60">Ctrl+S</span>
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push('/admin/services')}
-            >
-              Cancel
-            </Button>
+            {/* Content */}
+            <div>
+              <Label>Content</Label>
+              <RichTextEditor
+                content={formData.content}
+                onChange={(content) => setFormData({ ...formData, content })}
+              />
+            </div>
           </div>
         </div>
-      </form>
+
+        {/* Right Column - Live Preview */}
+        <div className="lg:col-span-1">
+          <ServicePreview service={formData} />
+        </div>
+      </div>
     </div>
   );
 }
