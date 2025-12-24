@@ -4,6 +4,7 @@ import { getDatabase } from '@/lib/mongodb';
 interface SiteSettings {
   _id: string;
   featuredProjectsLimit: number;
+  status: 'draft' | 'published';
   hero: {
     title: string;
     subtitle: string;
@@ -40,13 +41,14 @@ export async function GET() {
     const db = await getDatabase();
     const settingsCollection = db.collection<SiteSettings>('settings');
     
-    let settings = await settingsCollection.findOne({ _id: 'site-settings' as any });
+    let settings = await settingsCollection.findOne({ _id: 'homepage-hero' as any });
     
     // Return default settings if none exist
     if (!settings) {
       const defaultSettings: SiteSettings = {
-        _id: 'site-settings',
+        _id: 'homepage-hero',
         featuredProjectsLimit: 3,
+        status: 'published',
         hero: {
           title: 'Building the Future of Renewable Energy Infrastructure',
           subtitle: 'Expert precast concrete solutions for utility-scale battery storage, solar installations, and critical infrastructure projects.',
@@ -106,6 +108,7 @@ export async function PUT(request: NextRequest) {
 
     const updateData: any = {
       featuredProjectsLimit: data.featuredProjectsLimit || 3,
+      status: data.status || 'published',
       updatedAt: new Date(),
     };
 
@@ -143,7 +146,7 @@ export async function PUT(request: NextRequest) {
     console.log('Update data:', JSON.stringify(updateData, null, 2));
 
     await settingsCollection.updateOne(
-      { _id: 'site-settings' as any },
+      { _id: 'homepage-hero' as any },
       { $set: updateData },
       { upsert: true }
     );

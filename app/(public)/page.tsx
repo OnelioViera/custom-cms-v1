@@ -11,7 +11,7 @@ async function getHomeData() {
     
     // Get settings
     const settingsCollection = db.collection('settings');
-    const settings = await settingsCollection.findOne({ _id: 'site-settings' as any });
+    const settings = await settingsCollection.findOne({ _id: 'homepage-hero' as any });
     const limit = settings?.featuredProjectsLimit || 3;
     // Default hero settings
     const hero = settings?.hero || {

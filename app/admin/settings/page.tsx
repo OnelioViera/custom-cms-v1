@@ -7,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Settings, Edit, X, Upload } from 'lucide-react';
+import { Settings, Edit, X, Eye, FileText, Upload } from 'lucide-react';
 import Image from 'next/image';
 import ImageEditor, { ImageSettings } from '@/components/admin/ImageEditor';
+import HeroPreview from '@/components/admin/HeroPreview';
 
 interface Page {
   value: string;
@@ -24,6 +25,7 @@ export default function SettingsPage() {
   const [availablePages, setAvailablePages] = useState<Page[]>([]);
   const [settings, setSettings] = useState({
     featuredProjectsLimit: 3,
+    status: 'published' as 'draft' | 'published',
     hero: {
       title: '',
       subtitle: '',
@@ -64,9 +66,9 @@ export default function SettingsPage() {
       const data = await response.json();
       
       if (data.success) {
-        // Merge with defaults to handle missing fields
         const mergedSettings = {
           featuredProjectsLimit: data.settings.featuredProjectsLimit || 3,
+          status: data.settings.status || 'published',
           hero: {
             title: data.settings.hero?.title || '',
             subtitle: data.settings.hero?.subtitle || '',
@@ -202,24 +204,26 @@ export default function SettingsPage() {
     toast.success('Video removed');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async (newStatus?: 'draft' | 'published') => {
     setSaving(true);
 
     try {
-      console.log('Submitting settings:', settings);
+      const saveSettings = {
+        ...settings,
+        status: newStatus || settings.status,
+      };
 
       const response = await fetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(saveSettings),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        toast.success('Settings saved successfully');
-        // Refetch to confirm save
+        toast.success(`Settings ${newStatus === 'published' ? 'published' : 'saved'} successfully`);
+        setSettings(saveSettings);
         await fetchSettings();
       } else {
         toast.error(data.message || 'Failed to save settings');
@@ -243,6 +247,15 @@ export default function SettingsPage() {
     }
   };
 
+  // Dynamic styles for user-generated values
+  const backgroundImageContainerStyle: React.CSSProperties = {
+    backgroundColor: settings.hero.backgroundColor,
+  };
+  
+  const backgroundImageOverlayStyle: React.CSSProperties = {
+    opacity: (settings.hero.imageSettings?.opacity || 30) / 100,
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -253,514 +266,549 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <div className="flex items-center gap-4 mb-8">
-        <Settings className="w-8 h-8 text-gray-600" />
-        <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-gray-600 mt-1">Configure homepage and site settings</p>
+      {/* Top Action Bar */}
+      <div className="bg-white border-b sticky top-0 z-10 mb-6">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-4">
+            <Settings className="w-6 h-6 text-gray-600" />
+            <div>
+              <h1 className="text-2xl font-bold">Settings</h1>
+              <p className="text-sm text-gray-600">Configure homepage and site settings</p>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                settings.status === 'published' 
+                  ? 'bg-green-100 text-green-700' 
+                  : 'bg-yellow-100 text-yellow-700'
+              }`}>
+                {settings.status === 'published' ? '● Published' : '● Draft'}
+              </span>
+            </div>
+            
+            <Button
+              variant="outline"
+              onClick={() => handleSave('draft')}
+              disabled={saving}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Save as Draft
+            </Button>
+            
+            <Button
+              onClick={() => handleSave('published')}
+              disabled={saving}
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              {saving ? 'Publishing...' : 'Publish'}
+            </Button>
+          </div>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-4xl space-y-6">
-        {/* Hero Section Settings */}
-        <div className="bg-white p-6 rounded-lg border space-y-6">
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Hero Section</h2>
-            
-            {/* Title */}
-            <div className="mb-4">
-              <Label htmlFor="heroTitle">Hero Title</Label>
-              <Input
-                id="heroTitle"
-                value={settings.hero.title}
-                onChange={(e) => setSettings({ 
-                  ...settings, 
-                  hero: { ...settings.hero, title: e.target.value }
-                })}
-                placeholder="Building the Future of..."
-              />
-            </div>
-
-            {/* Subtitle */}
-            <div className="mb-6">
-              <Label htmlFor="heroSubtitle">Hero Subtitle</Label>
-              <Textarea
-                id="heroSubtitle"
-                value={settings.hero.subtitle}
-                onChange={(e) => setSettings({ 
-                  ...settings, 
-                  hero: { ...settings.hero, subtitle: e.target.value }
-                })}
-                rows={3}
-                placeholder="Expert precast concrete solutions..."
-              />
-            </div>
-
-            {/* Primary Button */}
-            <div className="border rounded-lg p-4 mb-4 bg-gray-50">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold">Primary Button</h3>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={settings.hero.primaryButton.enabled}
-                    onCheckedChange={(checked: boolean) => setSettings({
-                      ...settings,
-                      hero: {
-                        ...settings.hero,
-                        primaryButton: { ...settings.hero.primaryButton, enabled: checked }
-                      }
-                    })}
-                  />
-                  <Label>Enabled</Label>
-                </div>
-              </div>
-
-              {settings.hero.primaryButton.enabled && (
-                <div className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="primaryButtonText">Button Text</Label>
-                      <Input
-                        id="primaryButtonText"
-                        value={settings.hero.primaryButton.text}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          hero: {
-                            ...settings.hero,
-                            primaryButton: { ...settings.hero.primaryButton, text: e.target.value }
-                          }
-                        })}
-                        placeholder="View Our Projects"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="primaryButtonLink">Button Link</Label>
-                      <select
-                        id="primaryButtonLink"
-                        value={settings.hero.primaryButton.link}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          hero: {
-                            ...settings.hero,
-                            primaryButton: { ...settings.hero.primaryButton, link: e.target.value }
-                          }
-                        })}
-                        className="w-full border rounded-md px-3 py-2"
-                        title="Select page for primary button link"
-                      >
-                        {availablePages.map((page) => (
-                          <option key={page.value} value={page.value}>
-                            {page.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="primaryButtonBg">Background Color</Label>
-                      <div className="flex gap-2 items-center">
-                        <Input
-                          type="color"
-                          value={settings.hero.primaryButton.backgroundColor}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            hero: {
-                              ...settings.hero,
-                              primaryButton: { ...settings.hero.primaryButton, backgroundColor: e.target.value }
-                            }
-                          })}
-                          className="w-16 h-10 cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={settings.hero.primaryButton.backgroundColor}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            hero: {
-                              ...settings.hero,
-                              primaryButton: { ...settings.hero.primaryButton, backgroundColor: e.target.value }
-                            }
-                          })}
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="primaryButtonTextColor">Text Color</Label>
-                      <div className="flex gap-2 items-center">
-                        <Input
-                          type="color"
-                          value={settings.hero.primaryButton.textColor}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            hero: {
-                              ...settings.hero,
-                              primaryButton: { ...settings.hero.primaryButton, textColor: e.target.value }
-                            }
-                          })}
-                          className="w-16 h-10 cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={settings.hero.primaryButton.textColor}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            hero: {
-                              ...settings.hero,
-                              primaryButton: { ...settings.hero.primaryButton, textColor: e.target.value }
-                            }
-                          })}
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Secondary Button */}
-            <div className="border rounded-lg p-4 mb-6 bg-gray-50">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold">Secondary Button</h3>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={settings.hero.secondaryButton.enabled}
-                    onCheckedChange={(checked: boolean) => setSettings({
-                      ...settings,
-                      hero: {
-                        ...settings.hero,
-                        secondaryButton: { ...settings.hero.secondaryButton, enabled: checked }
-                      }
-                    })}
-                  />
-                  <Label>Enabled</Label>
-                </div>
-              </div>
-
-              {settings.hero.secondaryButton.enabled && (
-                <div className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="secondaryButtonText">Button Text</Label>
-                      <Input
-                        id="secondaryButtonText"
-                        value={settings.hero.secondaryButton.text}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          hero: {
-                            ...settings.hero,
-                            secondaryButton: { ...settings.hero.secondaryButton, text: e.target.value }
-                          }
-                        })}
-                        placeholder="Get in Touch"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="secondaryButtonLink">Button Link</Label>
-                      <select
-                        id="secondaryButtonLink"
-                        value={settings.hero.secondaryButton.link}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          hero: {
-                            ...settings.hero,
-                            secondaryButton: { ...settings.hero.secondaryButton, link: e.target.value }
-                          }
-                        })}
-                        className="w-full border rounded-md px-3 py-2"
-                        title="Select page for secondary button link"
-                      >
-                        {availablePages.map((page) => (
-                          <option key={page.value} value={page.value}>
-                            {page.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="secondaryButtonBg">Background Color</Label>
-                      <div className="flex gap-2 items-center">
-                        <Input
-                          type="color"
-                          value={settings.hero.secondaryButton.backgroundColor === 'transparent' ? '#000000' : settings.hero.secondaryButton.backgroundColor}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            hero: {
-                              ...settings.hero,
-                              secondaryButton: { ...settings.hero.secondaryButton, backgroundColor: e.target.value }
-                            }
-                          })}
-                          className="w-16 h-10 cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={settings.hero.secondaryButton.backgroundColor}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            hero: {
-                              ...settings.hero,
-                              secondaryButton: { ...settings.hero.secondaryButton, backgroundColor: e.target.value }
-                            }
-                          })}
-                          placeholder="transparent or #hex"
-                          className="flex-1"
-                        />
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">Use &quot;transparent&quot; for no background</p>
-                    </div>
-                    <div>
-                      <Label htmlFor="secondaryButtonTextColor">Text Color</Label>
-                      <div className="flex gap-2 items-center">
-                        <Input
-                          type="color"
-                          value={settings.hero.secondaryButton.textColor}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            hero: {
-                              ...settings.hero,
-                              secondaryButton: { ...settings.hero.secondaryButton, textColor: e.target.value }
-                            }
-                          })}
-                          className="w-16 h-10 cursor-pointer"
-                        />
-                        <Input
-                          type="text"
-                          value={settings.hero.secondaryButton.textColor}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            hero: {
-                              ...settings.hero,
-                              secondaryButton: { ...settings.hero.secondaryButton, textColor: e.target.value }
-                            }
-                          })}
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Background Color */}
-            <div className="mb-6">
-              <Label htmlFor="backgroundColor">Background Color</Label>
-              <div className="flex gap-4 items-center">
+      {/* Two Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Settings Form */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Hero Section Settings */}
+          <div className="bg-white p-6 rounded-lg border space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Hero Section</h2>
+              
+              {/* Title */}
+              <div className="mb-4">
+                <Label htmlFor="heroTitle">Hero Title</Label>
                 <Input
-                  id="backgroundColor"
-                  type="color"
-                  value={settings.hero.backgroundColor}
+                  id="heroTitle"
+                  value={settings.hero.title}
                   onChange={(e) => setSettings({ 
                     ...settings, 
-                    hero: { ...settings.hero, backgroundColor: e.target.value }
+                    hero: { ...settings.hero, title: e.target.value }
                   })}
-                  className="w-20 h-10 cursor-pointer"
+                  placeholder="Building the Future of..."
                 />
-                <Input
-                  type="text"
-                  value={settings.hero.backgroundColor}
+              </div>
+
+              {/* Subtitle */}
+              <div className="mb-6">
+                <Label htmlFor="heroSubtitle">Hero Subtitle</Label>
+                <Textarea
+                  id="heroSubtitle"
+                  value={settings.hero.subtitle}
                   onChange={(e) => setSettings({ 
                     ...settings, 
-                    hero: { ...settings.hero, backgroundColor: e.target.value }
+                    hero: { ...settings.hero, subtitle: e.target.value }
                   })}
-                  placeholder="#1e40af"
-                  className="flex-1"
+                  rows={3}
+                  placeholder="Expert precast concrete solutions..."
                 />
               </div>
-              <p className="text-sm text-gray-500 mt-1">
-                Choose the background color for the hero section
-              </p>
-            </div>
 
-            {/* Background Type Selector */}
-            <div className="mb-6">
-              <Label>Background Type</Label>
-              <div className="grid grid-cols-3 gap-2 mt-2">
-                {(['color', 'image', 'video'] as const).map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setSettings({
-                      ...settings,
-                      hero: { ...settings.hero, backgroundType: type }
-                    })}
-                    className={`px-4 py-2 rounded-md border transition-colors ${
-                      settings.hero.backgroundType === type
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-blue-300'
-                    }`}
-                  >
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </button>
-                ))}
-              </div>
-              <p className="text-sm text-gray-500 mt-1">
-                Choose background type: solid color, image, or video
-              </p>
-            </div>
-
-            {/* Background Image Upload - Show only if type is 'image' */}
-            {settings.hero.backgroundType === 'image' && (
-              <div className="mb-6">
-                <Label>Hero Background Image</Label>
-                <div className="space-y-4">
-                  {settings.hero.backgroundImage && (
-                    <div 
-                      className="relative h-64 rounded-lg overflow-hidden border group"
-                      style={{ backgroundColor: settings.hero.backgroundColor }}
-                    >
-                      <div 
-                        className="absolute inset-0"
-                        style={{ opacity: (settings.hero.imageSettings?.opacity || 30) / 100 }}
-                      >
-                        <Image
-                          src={settings.hero.backgroundImage}
-                          alt="Hero background"
-                          fill
-                          className={`object-cover ${getObjectPosition()}`}
-                          style={{
-                            transform: `scale(${(settings.hero.imageSettings?.scale || 100) / 100})`,
-                          }}
-                        />
-                      </div>
-                      <div className="relative h-full flex items-center justify-center text-white">
-                        <div className="text-center p-8">
-                          <h3 className="text-2xl font-bold">Preview</h3>
-                          <p className="text-sm">Opacity: {settings.hero.imageSettings?.opacity}% | Position: {settings.hero.imageSettings?.position} | Scale: {settings.hero.imageSettings?.scale}%</p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={removeHeroImage}
-                        className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        aria-label="Remove hero background image"
-                        title="Remove hero background image"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowImageEditor(true)}
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      {settings.hero.backgroundImage ? 'Edit Background' : 'Add Background'}
-                    </Button>
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    Upload and customize the hero background image
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Background Video Upload - Show only if type is 'video' */}
-            {settings.hero.backgroundType === 'video' && (
-              <div className="mb-6">
-                <Label>Hero Background Video</Label>
-                <div className="space-y-4">
-                  {settings.hero.backgroundVideo && (
-                    <div className="relative h-64 rounded-lg overflow-hidden border bg-black group">
-                      <video
-                        src={settings.hero.backgroundVideo}
-                        className="w-full h-full object-cover"
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                      />
-                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                        <div className="text-white text-center">
-                          <p className="text-sm">Video Preview (Opacity: {settings.hero.imageSettings?.opacity || 30}%)</p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={removeHeroVideo}
-                        className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        aria-label="Remove hero background video"
-                        title="Remove hero background video"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-
-                  <div>
-                    <input
-                      type="file"
-                      id="video-upload"
-                      accept="video/*"
-                      onChange={handleVideoUpload}
-                      className="hidden"
-                      title="Upload hero background video"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => document.getElementById('video-upload')?.click()}
-                      disabled={uploading}
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      {uploading ? 'Uploading...' : settings.hero.backgroundVideo ? 'Change Video' : 'Upload Video'}
-                    </Button>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Upload background video (Max 50MB). Recommended: MP4 format, 1920x1080
-                    </p>
-                  </div>
-
-                  {/* Opacity control for video */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Label>Video Opacity</Label>
-                      <span className="text-sm text-gray-600">{settings.hero.imageSettings?.opacity || 30}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      step="5"
-                      value={settings.hero.imageSettings?.opacity || 30}
-                      onChange={(e) => setSettings({
+              {/* Primary Button */}
+              <div className="border rounded-lg p-4 mb-4 bg-gray-50">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold">Primary Button</h3>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={settings.hero.primaryButton.enabled}
+                      onCheckedChange={(checked) => setSettings({
                         ...settings,
                         hero: {
                           ...settings.hero,
-                          imageSettings: {
-                            ...settings.hero.imageSettings,
-                            opacity: parseInt(e.target.value),
-                          }
+                          primaryButton: { ...settings.hero.primaryButton, enabled: checked }
                         }
                       })}
-                      className="w-full"
-                      title="Video opacity control"
-                      aria-label="Video opacity"
                     />
-                    <p className="text-sm text-gray-500 mt-1">
-                      Control video transparency (lower = more visible text)
+                    <Label>Enabled</Label>
+                  </div>
+                </div>
+
+                {settings.hero.primaryButton.enabled && (
+                  <div className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="primaryButtonText">Button Text</Label>
+                        <Input
+                          id="primaryButtonText"
+                          value={settings.hero.primaryButton.text}
+                          onChange={(e) => setSettings({
+                            ...settings,
+                            hero: {
+                              ...settings.hero,
+                              primaryButton: { ...settings.hero.primaryButton, text: e.target.value }
+                            }
+                          })}
+                          placeholder="View Our Projects"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="primaryButtonLink">Button Link</Label>
+                        <select
+                          id="primaryButtonLink"
+                          value={settings.hero.primaryButton.link}
+                          onChange={(e) => setSettings({
+                            ...settings,
+                            hero: {
+                              ...settings.hero,
+                              primaryButton: { ...settings.hero.primaryButton, link: e.target.value }
+                            }
+                          })}
+                          className="w-full border rounded-md px-3 py-2"
+                          aria-label="Select page for primary button link"
+                        >
+                          {availablePages.map((page) => (
+                            <option key={page.value} value={page.value}>
+                              {page.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="primaryButtonBg">Background Color</Label>
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            type="color"
+                            value={settings.hero.primaryButton.backgroundColor}
+                            onChange={(e) => setSettings({
+                              ...settings,
+                              hero: {
+                                ...settings.hero,
+                                primaryButton: { ...settings.hero.primaryButton, backgroundColor: e.target.value }
+                              }
+                            })}
+                            className="w-16 h-10 cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={settings.hero.primaryButton.backgroundColor}
+                            onChange={(e) => setSettings({
+                              ...settings,
+                              hero: {
+                                ...settings.hero,
+                                primaryButton: { ...settings.hero.primaryButton, backgroundColor: e.target.value }
+                              }
+                            })}
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="primaryButtonText">Text Color</Label>
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            type="color"
+                            value={settings.hero.primaryButton.textColor}
+                            onChange={(e) => setSettings({
+                              ...settings,
+                              hero: {
+                                ...settings.hero,
+                                primaryButton: { ...settings.hero.primaryButton, textColor: e.target.value }
+                              }
+                            })}
+                            className="w-16 h-10 cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={settings.hero.primaryButton.textColor}
+                            onChange={(e) => setSettings({
+                              ...settings,
+                              hero: {
+                                ...settings.hero,
+                                primaryButton: { ...settings.hero.primaryButton, textColor: e.target.value }
+                              }
+                            })}
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Secondary Button */}
+              <div className="border rounded-lg p-4 mb-6 bg-gray-50">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold">Secondary Button</h3>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={settings.hero.secondaryButton.enabled}
+                      onCheckedChange={(checked) => setSettings({
+                        ...settings,
+                        hero: {
+                          ...settings.hero,
+                          secondaryButton: { ...settings.hero.secondaryButton, enabled: checked }
+                        }
+                      })}
+                    />
+                    <Label>Enabled</Label>
+                  </div>
+                </div>
+
+                {settings.hero.secondaryButton.enabled && (
+                  <div className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="secondaryButtonText">Button Text</Label>
+                        <Input
+                          id="secondaryButtonText"
+                          value={settings.hero.secondaryButton.text}
+                          onChange={(e) => setSettings({
+                            ...settings,
+                            hero: {
+                              ...settings.hero,
+                              secondaryButton: { ...settings.hero.secondaryButton, text: e.target.value }
+                            }
+                          })}
+                          placeholder="Get in Touch"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="secondaryButtonLink">Button Link</Label>
+                        <select
+                          id="secondaryButtonLink"
+                          value={settings.hero.secondaryButton.link}
+                          onChange={(e) => setSettings({
+                            ...settings,
+                            hero: {
+                              ...settings.hero,
+                              secondaryButton: { ...settings.hero.secondaryButton, link: e.target.value }
+                            }
+                          })}
+                          className="w-full border rounded-md px-3 py-2"
+                          aria-label="Select page for secondary button link"
+                        >
+                          {availablePages.map((page) => (
+                            <option key={page.value} value={page.value}>
+                              {page.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="secondaryButtonBg">Background Color</Label>
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            type="color"
+                            value={settings.hero.secondaryButton.backgroundColor === 'transparent' ? '#000000' : settings.hero.secondaryButton.backgroundColor}
+                            onChange={(e) => setSettings({
+                              ...settings,
+                              hero: {
+                                ...settings.hero,
+                                secondaryButton: { ...settings.hero.secondaryButton, backgroundColor: e.target.value }
+                              }
+                            })}
+                            className="w-16 h-10 cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={settings.hero.secondaryButton.backgroundColor}
+                            onChange={(e) => setSettings({
+                              ...settings,
+                              hero: {
+                                ...settings.hero,
+                                secondaryButton: { ...settings.hero.secondaryButton, backgroundColor: e.target.value }
+                              }
+                            })}
+                            placeholder="transparent or #hex"
+                            className="flex-1"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Use &quot;transparent&quot; for no background</p>
+                      </div>
+                      <div>
+                        <Label htmlFor="secondaryButtonTextColor">Text Color</Label>
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            type="color"
+                            value={settings.hero.secondaryButton.textColor}
+                            onChange={(e) => setSettings({
+                              ...settings,
+                              hero: {
+                                ...settings.hero,
+                                secondaryButton: { ...settings.hero.secondaryButton, textColor: e.target.value }
+                              }
+                            })}
+                            className="w-16 h-10 cursor-pointer"
+                          />
+                          <Input
+                            type="text"
+                            value={settings.hero.secondaryButton.textColor}
+                            onChange={(e) => setSettings({
+                              ...settings,
+                              hero: {
+                                ...settings.hero,
+                                secondaryButton: { ...settings.hero.secondaryButton, textColor: e.target.value }
+                              }
+                            })}
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Background Color */}
+              <div className="mb-6">
+                <Label htmlFor="backgroundColor">Background Color</Label>
+                <div className="flex gap-4 items-center">
+                  <Input
+                    id="backgroundColor"
+                    type="color"
+                    value={settings.hero.backgroundColor}
+                    onChange={(e) => setSettings({ 
+                      ...settings, 
+                      hero: { ...settings.hero, backgroundColor: e.target.value }
+                    })}
+                    className="w-20 h-10 cursor-pointer"
+                  />
+                  <Input
+                    type="text"
+                    value={settings.hero.backgroundColor}
+                    onChange={(e) => setSettings({ 
+                      ...settings, 
+                      hero: { ...settings.hero, backgroundColor: e.target.value }
+                    })}
+                    placeholder="#1e40af"
+                    className="flex-1"
+                  />
+                </div>
+                <p className="text-sm text-gray-500 mt-1">
+                  Choose the background color for the hero section
+                </p>
+              </div>
+
+              {/* Background Type Selector */}
+              <div className="mb-6">
+                <Label>Background Type</Label>
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {(['color', 'image', 'video'] as const).map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setSettings({
+                        ...settings,
+                        hero: { ...settings.hero, backgroundType: type }
+                      })}
+                      className={`px-4 py-2 rounded-md border transition-colors ${
+                        settings.hero.backgroundType === type
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-blue-300'
+                      }`}
+                    >
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-500 mt-1">
+                  Choose background type: solid color, image, or video
+                </p>
+              </div>
+
+              {/* Background Image Upload - Show only if type is 'image' */}
+              {settings.hero.backgroundType === 'image' && (
+                <div className="mb-6">
+                  <Label>Hero Background Image</Label>
+                  <div className="space-y-4">
+                    {settings.hero.backgroundImage && (
+                      <div 
+                        className="relative h-64 rounded-lg overflow-hidden border group"
+                        style={backgroundImageContainerStyle}
+                      >
+                        <div 
+                          className="absolute inset-0"
+                          style={backgroundImageOverlayStyle}
+                        >
+                          <Image
+                            src={settings.hero.backgroundImage}
+                            alt="Hero background"
+                            fill
+                            className={`object-cover ${getObjectPosition()}`}
+                            style={{
+                              transform: `scale(${(settings.hero.imageSettings?.scale || 100) / 100})`,
+                            }}
+                          />
+                        </div>
+                        <div className="relative h-full flex items-center justify-center text-white">
+                          <div className="text-center p-8">
+                            <h3 className="text-2xl font-bold">Preview</h3>
+                            <p className="text-sm">Opacity: {settings.hero.imageSettings?.opacity}% | Position: {settings.hero.imageSettings?.position} | Scale: {settings.hero.imageSettings?.scale}%</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={removeHeroImage}
+                          className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          aria-label="Remove hero background image"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowImageEditor(true)}
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        {settings.hero.backgroundImage ? 'Edit Background' : 'Add Background'}
+                      </Button>
+                    </div>
+                    <p className="text-sm text-gray-500">
+                      Upload and customize the hero background image
                     </p>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
+              {/* Background Video Upload - Show only if type is 'video' */}
+              {settings.hero.backgroundType === 'video' && (
+                <div className="mb-6">
+                  <Label>Hero Background Video</Label>
+                  <div className="space-y-4">
+                    {settings.hero.backgroundVideo && (
+                      <div className="relative h-64 rounded-lg overflow-hidden border bg-black group">
+                        <video
+                          src={settings.hero.backgroundVideo}
+                          className="w-full h-full object-cover"
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                        />
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                          <div className="text-white text-center">
+                            <p className="text-sm">Video Preview (Opacity: {settings.hero.imageSettings?.opacity || 30}%)</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={removeHeroVideo}
+                          className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          aria-label="Remove hero background video"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+
+                    <div>
+                      <input
+                        type="file"
+                        id="video-upload"
+                        accept="video/*"
+                        onChange={handleVideoUpload}
+                        className="hidden"
+                        aria-label="Upload hero background video"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById('video-upload')?.click()}
+                        disabled={uploading}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        {uploading ? 'Uploading...' : settings.hero.backgroundVideo ? 'Change Video' : 'Upload Video'}
+                      </Button>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Upload background video (Max 50MB). Recommended: MP4 format, 1920x1080
+                      </p>
+                    </div>
+
+                    {/* Opacity control for video */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <Label>Video Opacity</Label>
+                        <span className="text-sm text-gray-600">{settings.hero.imageSettings?.opacity || 30}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={settings.hero.imageSettings?.opacity || 30}
+                        onChange={(e) => setSettings({
+                          ...settings,
+                          hero: {
+                            ...settings.hero,
+                            imageSettings: {
+                              ...settings.hero.imageSettings,
+                              opacity: parseInt(e.target.value),
+                              position: settings.hero.imageSettings?.position || 'center',
+                              scale: settings.hero.imageSettings?.scale || 100,
+                            }
+                          }
+                        })}
+                        className="w-full"
+                        aria-label="Video opacity control"
+                      />
+                      <p className="text-sm text-gray-500 mt-1">
+                        Control video transparency (lower = more visible text)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
           </div>
-        </div>
 
-        {/* Homepage Settings */}
-        <div className="bg-white p-6 rounded-lg border space-y-6">
-          <div>
+          {/* Homepage Settings */}
+          <div className="bg-white p-6 rounded-lg border">
             <h2 className="text-xl font-semibold mb-4">Homepage Settings</h2>
-            
             <div>
               <Label htmlFor="featuredProjectsLimit">
                 Number of Featured Projects to Display
@@ -783,10 +831,11 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <Button type="submit" disabled={saving}>
-          {saving ? 'Saving...' : 'Save Settings'}
-        </Button>
-      </form>
+        {/* Right Column - Live Preview */}
+        <div className="lg:col-span-1">
+          <HeroPreview settings={settings} />
+        </div>
+      </div>
 
       {/* Image Editor Modal */}
       {showImageEditor && (
