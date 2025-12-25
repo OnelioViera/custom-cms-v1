@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { ArrowLeft, Upload, X, Trash2, Eye, FileText } from 'lucide-react';
+import { ArrowLeft, Upload, X, Trash2, Save } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import TeamMemberPreview from '@/components/admin/TeamMemberPreview';
@@ -29,7 +29,6 @@ export default function EditTeamMemberPage({ params }: { params: Promise<{ id: s
     phone: '',
     linkedin: '',
     order: 0,
-    publishStatus: 'draft' as 'draft' | 'published',
   });
 
   useEffect(() => {
@@ -46,14 +45,13 @@ export default function EditTeamMemberPage({ params }: { params: Promise<{ id: s
         setFormData({
           name: member.name,
           slug: member.slug,
-          role: member.position || member.role || '',
+          role: member.role || '',
           bio: member.bio || '',
-          photo: member.image || member.photo || '',
+          photo: member.photo || '',
           email: member.email || '',
           phone: member.phone || '',
-          linkedin: member.linkedIn || member.linkedin || '',
+          linkedin: member.linkedin || '',
           order: member.order || 0,
-          publishStatus: member.publishStatus || 'draft',
         });
       } else {
         toast.error('Team member not found');
@@ -118,41 +116,20 @@ export default function EditTeamMemberPage({ params }: { params: Promise<{ id: s
     toast.success('Photo removed');
   };
 
-  const handleSave = async (newPublishStatus?: 'draft' | 'published') => {
+  const handleSave = async () => {
     setSaving(true);
 
     try {
-      // Map form fields to API field names
-      const saveData = {
-        name: formData.name,
-        slug: formData.slug,
-        position: formData.role, // Map role to position
-        bio: formData.bio,
-        image: formData.photo, // Map photo to image
-        email: formData.email,
-        phone: formData.phone,
-        linkedIn: formData.linkedin, // Map linkedin to linkedIn
-        order: formData.order,
-        publishStatus: newPublishStatus || formData.publishStatus,
-      };
-
       const response = await fetch(`/api/team/${resolvedParams.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(saveData),
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        toast.success(`Team member ${newPublishStatus === 'published' ? 'published' : 'saved'} successfully`);
-        setFormData({
-          ...formData,
-          publishStatus: newPublishStatus || formData.publishStatus,
-        });
-        if (newPublishStatus === 'published') {
-          router.push('/admin/team');
-        }
+        toast.success('Team member saved successfully');
       } else {
         toast.error(data.message || 'Failed to update team member');
       }
@@ -219,16 +196,6 @@ export default function EditTeamMemberPage({ params }: { params: Promise<{ id: s
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm">
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                formData.publishStatus === 'published' 
-                  ? 'bg-green-100 text-green-700' 
-                  : 'bg-yellow-100 text-yellow-700'
-              }`}>
-                {formData.publishStatus === 'published' ? '● Published' : '● Draft'}
-              </span>
-            </div>
-
             <Button
               variant="outline"
               onClick={handleDelete}
@@ -239,20 +206,11 @@ export default function EditTeamMemberPage({ params }: { params: Promise<{ id: s
             </Button>
             
             <Button
-              variant="outline"
-              onClick={() => handleSave('draft')}
+              onClick={handleSave}
               disabled={saving}
             >
-              <FileText className="w-4 h-4 mr-2" />
-              Save as Draft
-            </Button>
-            
-            <Button
-              onClick={() => handleSave('published')}
-              disabled={saving}
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              {saving ? 'Publishing...' : 'Publish'}
+              <Save className="w-4 h-4 mr-2" />
+              {saving ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </div>

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import RichTextEditor from '@/components/admin/RichTextEditor';
-import { ArrowLeft, Eye, FileText } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import ServicePreview from '@/components/admin/ServicePreview';
 
@@ -21,7 +21,6 @@ export default function NewServicePage() {
     shortDescription: '',
     content: '',
     status: 'active' as const,
-    publishStatus: 'draft' as 'draft' | 'published',
     order: 0,
   });
 
@@ -41,25 +40,20 @@ export default function NewServicePage() {
     });
   };
 
-  const handleSubmit = async (newPublishStatus?: 'draft' | 'published') => {
+  const handleSubmit = async () => {
     setLoading(true);
 
     try {
-      const saveData = {
-        ...formData,
-        publishStatus: newPublishStatus || formData.publishStatus,
-      };
-
       const response = await fetch('/api/services', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(saveData),
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        toast.success(`Service ${newPublishStatus === 'published' ? 'published' : 'created'} successfully`);
+        toast.success('Service created successfully');
         router.push('/admin/services');
       } else {
         toast.error(data.message || 'Failed to create service');
@@ -91,27 +85,12 @@ export default function NewServicePage() {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-                ● Draft
-              </span>
-            </div>
-            
             <Button
-              variant="outline"
-              onClick={() => handleSubmit('draft')}
+              onClick={handleSubmit}
               disabled={loading}
             >
-              <FileText className="w-4 h-4 mr-2" />
-              Save as Draft
-            </Button>
-            
-            <Button
-              onClick={() => handleSubmit('published')}
-              disabled={loading}
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              {loading ? 'Publishing...' : 'Publish'}
+              <Save className="w-4 h-4 mr-2" />
+              {loading ? 'Creating...' : 'Create Service'}
             </Button>
           </div>
         </div>
@@ -189,7 +168,7 @@ export default function NewServicePage() {
             <div>
               <Label>Content</Label>
               <RichTextEditor
-                content={formData.content}
+                value={formData.content}
                 onChange={(content) => setFormData({ ...formData, content })}
               />
             </div>

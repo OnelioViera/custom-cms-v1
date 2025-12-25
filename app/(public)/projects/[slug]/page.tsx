@@ -12,12 +12,11 @@ async function getProject(slug: string) {
     const db = await getDatabase();
     const projectsCollection = db.collection<Project>('projects');
     
-    const project = await projectsCollection.findOne({ 
-      slug,
-      publishStatus: 'published' // Add this filter
-    });
+    const project = await projectsCollection.findOne({ slug });
 
-    if (!project) return null;
+    if (!project) {
+      return null;
+    }
 
     return {
       ...project,

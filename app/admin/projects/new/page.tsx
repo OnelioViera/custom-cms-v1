@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import RichTextEditor from '@/components/admin/RichTextEditor';
-import { ArrowLeft, Upload, X, Image as ImageIcon, Eye, FileText } from 'lucide-react';
+import { ArrowLeft, Upload, X, Image as ImageIcon, Save } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import ProjectPreview from '@/components/admin/ProjectPreview';
@@ -26,7 +26,6 @@ export default function NewProjectPage() {
     startDate: '',
     endDate: '',
     status: 'planning' as const,
-    publishStatus: 'draft' as 'draft' | 'published',
     featured: false,
     content: '',
     images: [] as string[],
@@ -149,25 +148,20 @@ export default function NewProjectPage() {
     }));
   };
 
-  const handleSubmit = async (newPublishStatus?: 'draft' | 'published') => {
+  const handleSubmit = async () => {
     setLoading(true);
 
     try {
-      const saveData = {
-        ...formData,
-        publishStatus: newPublishStatus || formData.publishStatus,
-      };
-
       const response = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(saveData),
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        toast.success(`Project ${newPublishStatus === 'published' ? 'published' : 'created'} successfully`);
+        toast.success('Project created successfully');
         router.push('/admin/projects');
       } else {
         toast.error(data.message || 'Failed to create project');
@@ -199,27 +193,12 @@ export default function NewProjectPage() {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-                ● Draft
-              </span>
-            </div>
-            
             <Button
-              variant="outline"
-              onClick={() => handleSubmit('draft')}
+              onClick={handleSubmit}
               disabled={loading}
             >
-              <FileText className="w-4 h-4 mr-2" />
-              Save as Draft
-            </Button>
-            
-            <Button
-              onClick={() => handleSubmit('published')}
-              disabled={loading}
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              {loading ? 'Publishing...' : 'Publish'}
+              <Save className="w-4 h-4 mr-2" />
+              {loading ? 'Creating...' : 'Create Project'}
             </Button>
           </div>
         </div>
@@ -326,7 +305,7 @@ export default function NewProjectPage() {
             <div>
               <Label>Content</Label>
               <RichTextEditor
-                content={formData.content}
+                value={formData.content}
                 onChange={(content) => setFormData({ ...formData, content })}
               />
             </div>

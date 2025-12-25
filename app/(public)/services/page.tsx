@@ -8,10 +8,7 @@ async function getServices() {
     const servicesCollection = db.collection<Service>('services');
     
     const services = await servicesCollection
-      .find({ 
-        status: 'active',
-        publishStatus: 'published' // Make sure this is here
-      })
+      .find({ status: 'active' })
       .sort({ order: 1 })
       .toArray();
 

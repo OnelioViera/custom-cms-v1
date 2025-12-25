@@ -11,10 +11,7 @@ async function getTeamMember(slug: string) {
     const db = await getDatabase();
     const teamCollection = db.collection<TeamMember>('team');
     
-    const member = await teamCollection.findOne({ 
-      slug,
-      publishStatus: 'published' // Add this filter
-    });
+    const member = await teamCollection.findOne({ slug });
 
     if (!member) {
       return null;

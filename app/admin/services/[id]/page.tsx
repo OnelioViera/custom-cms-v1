@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import RichTextEditor from '@/components/admin/RichTextEditor';
-import { ArrowLeft, Trash2, Eye, FileText } from 'lucide-react';
+import { ArrowLeft, Trash2, Save } from 'lucide-react';
 import Link from 'next/link';
 import ServicePreview from '@/components/admin/ServicePreview';
 
@@ -24,7 +24,6 @@ export default function EditServicePage({ params }: { params: Promise<{ id: stri
     shortDescription: '',
     content: '',
     status: 'active' as const,
-    publishStatus: 'draft' as 'draft' | 'published',
     order: 0,
   });
 
@@ -43,9 +42,8 @@ export default function EditServicePage({ params }: { params: Promise<{ id: stri
           title: service.title,
           slug: service.slug,
           shortDescription: service.shortDescription || '',
-          content: service.content || service.fullDescription || '',
+          content: service.content || '',
           status: service.status,
-          publishStatus: service.publishStatus || 'draft',
           order: service.order || 0,
         });
       } else {
@@ -60,29 +58,20 @@ export default function EditServicePage({ params }: { params: Promise<{ id: stri
     }
   };
 
-  const handleSave = async (newPublishStatus?: 'draft' | 'published') => {
+  const handleSave = async () => {
     setSaving(true);
 
     try {
-      const saveData = {
-        ...formData,
-        publishStatus: newPublishStatus || formData.publishStatus,
-      };
-
       const response = await fetch(`/api/services/${resolvedParams.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(saveData),
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        toast.success(`Service ${newPublishStatus === 'published' ? 'published' : 'saved'} successfully`);
-        setFormData(saveData);
-        if (newPublishStatus === 'published') {
-          router.push('/admin/services');
-        }
+        toast.success('Service saved successfully');
       } else {
         toast.error(data.message || 'Failed to update service');
       }
@@ -149,16 +138,6 @@ export default function EditServicePage({ params }: { params: Promise<{ id: stri
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm">
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                formData.publishStatus === 'published' 
-                  ? 'bg-green-100 text-green-700' 
-                  : 'bg-yellow-100 text-yellow-700'
-              }`}>
-                {formData.publishStatus === 'published' ? '● Published' : '● Draft'}
-              </span>
-            </div>
-
             <Button
               variant="outline"
               onClick={handleDelete}
@@ -169,20 +148,11 @@ export default function EditServicePage({ params }: { params: Promise<{ id: stri
             </Button>
             
             <Button
-              variant="outline"
-              onClick={() => handleSave('draft')}
+              onClick={handleSave}
               disabled={saving}
             >
-              <FileText className="w-4 h-4 mr-2" />
-              Save as Draft
-            </Button>
-            
-            <Button
-              onClick={() => handleSave('published')}
-              disabled={saving}
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              {saving ? 'Publishing...' : 'Publish'}
+              <Save className="w-4 h-4 mr-2" />
+              {saving ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </div>
@@ -260,7 +230,7 @@ export default function EditServicePage({ params }: { params: Promise<{ id: stri
             <div>
               <Label>Content</Label>
               <RichTextEditor
-                content={formData.content}
+                value={formData.content}
                 onChange={(content) => setFormData({ ...formData, content })}
               />
             </div>

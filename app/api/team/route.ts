@@ -45,27 +45,16 @@ export async function POST(request: NextRequest) {
     const db = await getDatabase();
     const teamCollection = db.collection('team');
 
-    // Check if slug already exists
-    const existingMember = await teamCollection.findOne({ slug: data.slug });
-    if (existingMember) {
-      return NextResponse.json({
-        success: false,
-        message: 'A team member with this slug already exists'
-      }, { status: 400 });
-    }
-
     const newMember = {
       name: data.name,
       slug: data.slug,
-      position: data.position,
+      role: data.role,
       bio: data.bio || '',
-      image: data.image || '',
+      photo: data.photo || '',
       email: data.email || '',
       phone: data.phone || '',
-      linkedIn: data.linkedIn || '',
+      linkedin: data.linkedin || '',
       order: data.order || 0,
-      status: data.status || 'active',
-      publishStatus: data.publishStatus || 'draft',
       createdAt: new Date(),
       updatedAt: new Date(),
     };

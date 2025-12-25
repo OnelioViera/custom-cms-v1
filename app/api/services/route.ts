@@ -53,7 +53,6 @@ export async function POST(request: NextRequest) {
       shortDescription: data.shortDescription || '',
       content: data.content || '',
       status: data.status || 'active',
-      publishStatus: data.publishStatus || 'draft',
       order: data.order || 0,
       createdAt: new Date(),
       updatedAt: new Date(),

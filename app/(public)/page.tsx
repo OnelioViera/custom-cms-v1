@@ -12,17 +12,8 @@ async function getHomeData() {
     // Get settings
     const settingsCollection = db.collection('settings');
     const settings = await settingsCollection.findOne({ _id: 'homepage-hero' as any });
-    
-    // Only use settings if they're published, otherwise use defaults
-    const useSettings = settings?.status === 'published';
-    
-    console.log('Settings status:', settings?.status);
-    console.log('Using settings?', useSettings);
-    
-    const limit = useSettings ? (settings?.featuredProjectsLimit || 3) : 3;
-    
-    // Default hero settings
-    const defaultHero = {
+    const limit = settings?.featuredProjectsLimit || 3;
+    const hero = settings?.hero || {
       title: 'Building the Future of Renewable Energy Infrastructure',
       subtitle: 'Expert precast concrete solutions for utility-scale battery storage, solar installations, and critical infrastructure projects.',
       primaryButton: {
@@ -50,28 +41,21 @@ async function getHomeData() {
       },
     };
     
-    // Use published settings or defaults
-    const hero = useSettings && settings?.hero ? settings.hero : defaultHero;
-    
-    // Get featured projects - ONLY PUBLISHED
+    // Get featured projects - Remove publishStatus filter
     const projectsCollection = db.collection<Project>('projects');
     const featuredProjects = await projectsCollection
       .find({ 
         featured: true, 
-        status: { $in: ['in-progress' as const, 'completed' as const] },
-        publishStatus: 'published'
+        status: { $in: ['in-progress' as const, 'completed' as const] }
       })
       .sort({ order: 1, updatedAt: -1 })
       .limit(limit)
       .toArray();
 
-    // Get active services - ONLY PUBLISHED
+    // Get active services - Remove publishStatus filter
     const servicesCollection = db.collection<Service>('services');
     const services = await servicesCollection
-      .find({ 
-        status: 'active',
-        publishStatus: 'published'
-      })
+      .find({ status: 'active' })
       .sort({ order: 1 })
       .limit(6)
       .toArray();

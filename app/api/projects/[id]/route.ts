@@ -39,7 +39,7 @@ export async function GET(
   }
 }
 
-// PUT update project
+// PUT - Update project
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -47,39 +47,36 @@ export async function PUT(
   try {
     const { id } = await params;
     const data = await request.json();
-
     const db = await getDatabase();
-    const projectsCollection = db.collection<Project>('projects');
+    const projectsCollection = db.collection('projects');
 
-    // Remove _id from update data if present
-    const { _id, ...updateData } = data;
+    const updateData = {
+      title: data.title,
+      slug: data.slug,
+      description: data.description || '',
+      content: data.content || '',
+      images: data.images || [],
+      backgroundImage: data.backgroundImage || '',
+      client: data.client || '',
+      startDate: data.startDate ? new Date(data.startDate) : null,
+      endDate: data.endDate ? new Date(data.endDate) : null,
+      status: data.status,
+      featured: data.featured,
+      updatedAt: new Date(),
+    };
 
-    const result = await projectsCollection.updateOne(
+    await projectsCollection.updateOne(
       { _id: new ObjectId(id) },
-      { 
-        $set: {
-          ...updateData,
-          publishStatus: data.publishStatus || 'draft',
-          updatedAt: new Date()
-        }
-      }
+      { $set: updateData }
     );
 
-    if (result.matchedCount === 0) {
-      return NextResponse.json(
-        { success: false, message: 'Project not found' },
-        { status: 404 }
-      );
-    }
-
-    // Invalidate cache
     cache.delete('projects:published');
     cache.delete('projects:all');
     cache.delete(`project:${id}`);
 
     return NextResponse.json({
       success: true,
-      message: 'Project updated successfully'
+      message: 'Project updated successfully',
     });
   } catch (error) {
     console.error('Error updating project:', error);

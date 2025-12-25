@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { ArrowLeft, Upload, X, Eye, FileText } from 'lucide-react';
+import { ArrowLeft, Upload, X, Save } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import TeamMemberPreview from '@/components/admin/TeamMemberPreview';
@@ -26,7 +26,6 @@ export default function NewTeamMemberPage() {
     phone: '',
     linkedin: '',
     order: 0,
-    publishStatus: 'draft' as 'draft' | 'published',
   });
 
   const generateSlug = (name: string) => {
@@ -95,34 +94,20 @@ export default function NewTeamMemberPage() {
     }));
   };
 
-  const handleSubmit = async (newPublishStatus?: 'draft' | 'published') => {
+  const handleSubmit = async () => {
     setLoading(true);
 
     try {
-      // Map form fields to API field names
-      const saveData = {
-        name: formData.name,
-        slug: formData.slug,
-        position: formData.role, // Map role to position
-        bio: formData.bio,
-        image: formData.photo, // Map photo to image
-        email: formData.email,
-        phone: formData.phone,
-        linkedIn: formData.linkedin, // Map linkedin to linkedIn
-        order: formData.order,
-        publishStatus: newPublishStatus || formData.publishStatus,
-      };
-
       const response = await fetch('/api/team', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(saveData),
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        toast.success(`Team member ${newPublishStatus === 'published' ? 'published' : 'created'} successfully`);
+        toast.success('Team member created successfully');
         router.push('/admin/team');
       } else {
         toast.error(data.message || 'Failed to create team member');
@@ -154,27 +139,12 @@ export default function NewTeamMemberPage() {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-                ● Draft
-              </span>
-            </div>
-            
             <Button
-              variant="outline"
-              onClick={() => handleSubmit('draft')}
+              onClick={handleSubmit}
               disabled={loading}
             >
-              <FileText className="w-4 h-4 mr-2" />
-              Save as Draft
-            </Button>
-            
-            <Button
-              onClick={() => handleSubmit('published')}
-              disabled={loading}
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              {loading ? 'Publishing...' : 'Publish'}
+              <Save className="w-4 h-4 mr-2" />
+              {loading ? 'Creating...' : 'Create Team Member'}
             </Button>
           </div>
         </div>

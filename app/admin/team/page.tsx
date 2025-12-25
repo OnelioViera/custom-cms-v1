@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Plus, Search, Pencil } from 'lucide-react';
 import Image from 'next/image';
@@ -12,11 +11,10 @@ interface TeamMember {
   _id: string;
   name: string;
   slug: string;
-  position: string;
-  image?: string;
+  role: string;
+  photo?: string;
   email?: string;
   order: number;
-  publishStatus?: 'draft' | 'published';
 }
 
 export default function TeamPage() {
@@ -45,7 +43,7 @@ export default function TeamPage() {
 
   const filteredMembers = members.filter((member: TeamMember) =>
     member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.position.toLowerCase().includes(searchTerm.toLowerCase())
+    member.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -98,10 +96,10 @@ export default function TeamPage() {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 flex-1">
-                    {member.image ? (
+                    {member.photo ? (
                       <div className="relative w-12 h-12 rounded-full overflow-hidden">
                         <Image
-                          src={member.image}
+                          src={member.photo}
                           alt={member.name}
                           fill
                           className="object-cover"
@@ -113,20 +111,8 @@ export default function TeamPage() {
                       </div>
                     )}
                     <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <h3 className="font-semibold text-lg">{member.name}</h3>
-                        <Badge
-                          variant="secondary"
-                          className={
-                            member.publishStatus === 'published'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-yellow-100 text-yellow-700'
-                          }
-                        >
-                          {member.publishStatus === 'published' ? 'Published' : 'Draft'}
-                        </Badge>
-                      </div>
-                      <p className="text-gray-600 text-sm">{member.position}</p>
+                      <h3 className="font-semibold text-lg">{member.name}</h3>
+                      <p className="text-gray-600 text-sm">{member.role}</p>
                       <p className="text-gray-500 text-xs mt-1">
                         Order: {member.order} • /team/{member.slug}
                       </p>

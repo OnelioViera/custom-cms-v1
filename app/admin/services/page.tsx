@@ -36,7 +36,6 @@ interface Service {
   shortDescription: string;
   fullDescription?: string;
   status: 'active' | 'inactive';
-  publishStatus?: 'draft' | 'published';
   order: number;
   updatedAt: string;
 }
@@ -304,8 +303,6 @@ export default function ServicesPage() {
                 </TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead>Description</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Publish Status</TableHead>
                 <TableHead>Order</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -313,7 +310,7 @@ export default function ServicesPage() {
             <TableBody>
               {paginatedServices.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                     {searchQuery ? 'No services found matching your search.' : 'No services yet. Create your first service!'}
                   </TableCell>
                 </TableRow>
@@ -330,33 +327,23 @@ export default function ServicesPage() {
                       aria-label={`Select ${service.title}`}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">{service.title}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <h3 className="font-semibold text-lg">{service.title}</h3>
+                      <Badge
+                        variant="secondary"
+                        className={
+                          service.status === 'active'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }
+                      >
+                        {service.status}
+                      </Badge>
+                    </div>
+                  </TableCell>
                   <TableCell className="text-gray-600 max-w-md truncate">
                     {service.shortDescription}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="secondary"
-                      className={
-                        service.status === 'active'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }
-                    >
-                      {service.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="secondary"
-                      className={
-                        service.publishStatus === 'published'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-yellow-100 text-yellow-700'
-                      }
-                    >
-                      {service.publishStatus === 'published' ? 'Published' : 'Draft'}
-                    </Badge>
                   </TableCell>
                   <TableCell>{service.order}</TableCell>
                   <TableCell className="text-right">

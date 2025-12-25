@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Edit, Star } from 'lucide-react';
+import { GripVertical, Edit } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -56,19 +56,6 @@ function SortableProjectItem({ project }: { project: Project }) {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'default';
-      case 'in-progress':
-        return 'secondary';
-      case 'planning':
-        return 'outline';
-      default:
-        return 'outline';
-    }
   };
 
   const displayImage = project.backgroundImage || project.images?.[0];
@@ -111,23 +98,28 @@ function SortableProjectItem({ project }: { project: Project }) {
 
       {/* Project Info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-gray-900 truncate">
-            {project.title}
-          </h3>
+        <div className="flex items-center gap-3">
+          <h3 className="font-semibold text-lg">{project.title}</h3>
+          <Badge
+            variant="secondary"
+            className={
+              project.status === 'completed'
+                ? 'bg-green-100 text-green-700'
+                : project.status === 'in-progress'
+                ? 'bg-blue-100 text-blue-700'
+                : 'bg-yellow-100 text-yellow-700'
+            }
+          >
+            {project.status}
+          </Badge>
           {project.featured && (
-            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 flex-shrink-0" />
+            <Badge variant="default">Featured</Badge>
           )}
         </div>
         {project.client && (
           <p className="text-sm text-gray-600 truncate">{project.client}</p>
         )}
       </div>
-
-      {/* Status */}
-      <Badge variant={getStatusColor(project.status)}>
-        {project.status}
-      </Badge>
 
       {/* Edit Button */}
       <Link href={`/admin/projects/${project._id}`}>

@@ -59,59 +59,41 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST create new project
+// POST - Create new project
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
+    const db = await getDatabase();
+    const projectsCollection = db.collection('projects');
 
-    const result = await measureAsync('api.projects.create', async () => {
-      const db = await getDatabase();
-      const projectsCollection = db.collection<Project>('projects');
+    const newProject = {
+      title: data.title,
+      slug: data.slug,
+      description: data.description || '',
+      content: data.content || '',
+      images: data.images || [],
+      backgroundImage: data.backgroundImage || '',
+      client: data.client || '',
+      startDate: data.startDate ? new Date(data.startDate) : null,
+      endDate: data.endDate ? new Date(data.endDate) : null,
+      status: data.status || 'planning',
+      featured: data.featured || false,
+      order: 999,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-      // Check if slug already exists
-      const existingProject = await projectsCollection.findOne({ slug: data.slug });
-      if (existingProject) {
-        throw new Error('A project with this slug already exists');
-      }
+    const result = await projectsCollection.insertOne(newProject);
 
-      const project: Omit<Project, '_id'> = {
-        ...data,
-        publishStatus: data.publishStatus || 'draft',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      return await projectsCollection.insertOne(project as Project);
-    });
-
-    // Invalidate cache (both admin and public caches)
     cache.delete('projects:published');
     cache.delete('projects:all');
-
-    errorLogger.info('Project created', {
-      projectId: result.insertedId.toString(),
-      endpoint: '/api/projects',
-    });
 
     return NextResponse.json({
       success: true,
       message: 'Project created successfully',
-      id: result.insertedId.toString(),
+      projectId: result.insertedId.toString(),
     });
   } catch (error) {
-    errorLogger.error('Failed to create project', error as Error, {
-      endpoint: '/api/projects',
-      method: 'POST',
-    });
-
-    // Handle slug conflict error
-    if (error instanceof Error && error.message.includes('slug already exists')) {
-      return NextResponse.json(
-        { success: false, message: error.message },
-        { status: 400 }
-      );
-    }
-
     console.error('Error creating project:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to create project' },

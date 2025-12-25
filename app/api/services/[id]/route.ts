@@ -66,7 +66,6 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       shortDescription: data.shortDescription || '',
       content: data.content || '',
       status: data.status,
-      publishStatus: data.publishStatus || 'draft',
       order: data.order || 0,
       updatedAt: new Date(),
     };

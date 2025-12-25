@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Settings, Edit, X, Eye, FileText, Upload } from 'lucide-react';
+import { Settings, Edit, X, Upload, Save } from 'lucide-react';
 import Image from 'next/image';
 import ImageEditor, { ImageSettings } from '@/components/admin/ImageEditor';
 import HeroPreview from '@/components/admin/HeroPreview';
@@ -25,7 +25,6 @@ export default function SettingsPage() {
   const [availablePages, setAvailablePages] = useState<Page[]>([]);
   const [settings, setSettings] = useState({
     featuredProjectsLimit: 3,
-    status: 'published' as 'draft' | 'published',
     hero: {
       title: '',
       subtitle: '',
@@ -68,7 +67,6 @@ export default function SettingsPage() {
       if (data.success) {
         const mergedSettings = {
           featuredProjectsLimit: data.settings.featuredProjectsLimit || 3,
-          status: data.settings.status || 'published',
           hero: {
             title: data.settings.hero?.title || '',
             subtitle: data.settings.hero?.subtitle || '',
@@ -204,26 +202,22 @@ export default function SettingsPage() {
     toast.success('Video removed');
   };
 
-  const handleSave = async (newStatus?: 'draft' | 'published') => {
+  const handleSave = async () => {
     setSaving(true);
 
     try {
-      const saveSettings = {
-        ...settings,
-        status: newStatus || settings.status,
-      };
+      console.log('Submitting settings:', settings);
 
       const response = await fetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(saveSettings),
+        body: JSON.stringify(settings),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        toast.success(`Settings ${newStatus === 'published' ? 'published' : 'saved'} successfully`);
-        setSettings(saveSettings);
+        toast.success('Settings saved successfully');
         await fetchSettings();
       } else {
         toast.error(data.message || 'Failed to save settings');
@@ -279,31 +273,12 @@ export default function SettingsPage() {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm">
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                settings.status === 'published' 
-                  ? 'bg-green-100 text-green-700' 
-                  : 'bg-yellow-100 text-yellow-700'
-              }`}>
-                {settings.status === 'published' ? '● Published' : '● Draft'}
-              </span>
-            </div>
-            
             <Button
-              variant="outline"
-              onClick={() => handleSave('draft')}
+              onClick={handleSave}
               disabled={saving}
             >
-              <FileText className="w-4 h-4 mr-2" />
-              Save as Draft
-            </Button>
-            
-            <Button
-              onClick={() => handleSave('published')}
-              disabled={saving}
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              {saving ? 'Publishing...' : 'Publish'}
+              <Save className="w-4 h-4 mr-2" />
+              {saving ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </div>
@@ -679,6 +654,7 @@ export default function SettingsPage() {
                               transform: `scale(${(settings.hero.imageSettings?.scale || 100) / 100})`,
                             }}
                           />
+                          
                         </div>
                         <div className="relative h-full flex items-center justify-center text-white">
                           <div className="text-center p-8">

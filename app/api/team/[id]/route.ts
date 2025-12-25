@@ -62,15 +62,13 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     const updateData = {
       name: data.name,
       slug: data.slug,
-      position: data.position,
+      role: data.role,
       bio: data.bio || '',
-      image: data.image || '',
+      photo: data.photo || '',
       email: data.email || '',
       phone: data.phone || '',
-      linkedIn: data.linkedIn || '',
+      linkedin: data.linkedin || '',
       order: data.order || 0,
-      status: data.status || 'active',
-      publishStatus: data.publishStatus || 'draft',
       updatedAt: new Date(),
     };
 

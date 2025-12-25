@@ -11,8 +11,7 @@ async function getProjects() {
     
     const projects = await projectsCollection
       .find({ 
-        status: { $in: ['in-progress' as const, 'completed' as const] },
-        publishStatus: 'published' // Add this filter
+        status: { $in: ['in-progress' as const, 'completed' as const] }
       })
       .sort({ order: 1, updatedAt: -1 })
       .toArray();

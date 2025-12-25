@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import RichTextEditor from '@/components/admin/RichTextEditor';
-import { ArrowLeft, Upload, X, Image as ImageIcon, Trash2, Eye, FileText, Save } from 'lucide-react';
+import { ArrowLeft, Upload, X, Image as ImageIcon, Trash2, Save } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import ProjectPreview from '@/components/admin/ProjectPreview';
@@ -29,7 +29,6 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
     startDate: '',
     endDate: '',
     status: 'planning' as const,
-    publishStatus: 'draft' as 'draft' | 'published',
     featured: false,
     content: '',
     images: [] as string[],
@@ -55,7 +54,6 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
           startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '',
           endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : '',
           status: project.status,
-          publishStatus: project.publishStatus || 'draft',
           featured: project.featured,
           content: project.content || '',
           images: project.images || [],
@@ -175,29 +173,20 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
     toast.success('Background image removed');
   };
 
-  const handleSave = async (newPublishStatus?: 'draft' | 'published') => {
+  const handleSave = async () => {
     setSaving(true);
 
     try {
-      const saveData = {
-        ...formData,
-        publishStatus: newPublishStatus || formData.publishStatus,
-      };
-
       const response = await fetch(`/api/projects/${resolvedParams.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(saveData),
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        toast.success(`Project ${newPublishStatus === 'published' ? 'published' : 'saved'} successfully`);
-        setFormData(saveData);
-        if (newPublishStatus === 'published') {
-          router.push('/admin/projects');
-        }
+        toast.success('Project saved successfully');
       } else {
         toast.error(data.message || 'Failed to update project');
       }
@@ -264,16 +253,6 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm">
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                formData.publishStatus === 'published' 
-                  ? 'bg-green-100 text-green-700' 
-                  : 'bg-yellow-100 text-yellow-700'
-              }`}>
-                {formData.publishStatus === 'published' ? '● Published' : '● Draft'}
-              </span>
-            </div>
-
             <Button
               variant="outline"
               onClick={handleDelete}
@@ -284,20 +263,11 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
             </Button>
             
             <Button
-              variant="outline"
-              onClick={() => handleSave('draft')}
+              onClick={handleSave}
               disabled={saving}
             >
-              <FileText className="w-4 h-4 mr-2" />
-              Save as Draft
-            </Button>
-            
-            <Button
-              onClick={() => handleSave('published')}
-              disabled={saving}
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              {saving ? 'Publishing...' : 'Publish'}
+              <Save className="w-4 h-4 mr-2" />
+              {saving ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </div>
@@ -404,7 +374,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
             <div>
               <Label>Content</Label>
               <RichTextEditor
-                content={formData.content}
+                value={formData.content}
                 onChange={(content) => setFormData({ ...formData, content })}
               />
             </div>

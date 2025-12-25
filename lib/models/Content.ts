@@ -23,18 +23,16 @@ export interface Project {
   slug: string;
   description: string;
   content?: string;
+  images?: string[];
+  backgroundImage?: string;
   client?: string;
   startDate?: Date;
   endDate?: Date;
   status: 'planning' | 'in-progress' | 'completed';
-  publishStatus: 'draft' | 'published';
   featured: boolean;
-  order: number; // Add this line
-  images?: string[];
-  backgroundImage?: string; // Add this line
+  order: number;
   createdAt: Date;
   updatedAt: Date;
-  createdBy: string;
 }
 
 // Team Member Model
@@ -62,16 +60,12 @@ export interface Service {
   title: string;
   slug: string;
   shortDescription: string;
-  fullDescription: string;
+  content?: string;
   icon?: string;
-  image?: string;
-  features: string[];
-  order: number;
   status: 'active' | 'inactive';
-  publishStatus: 'draft' | 'published';
+  order: number;
   createdAt: Date;
   updatedAt: Date;
-  createdBy: string;
 }
 
 // Media Model
