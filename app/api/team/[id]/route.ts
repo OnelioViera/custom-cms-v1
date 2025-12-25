@@ -64,7 +64,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       slug: data.slug,
       role: data.role,
       bio: data.bio || '',
-      photo: data.photo || '',
+      image: data.image || data.photo || '',
       email: data.email || '',
       phone: data.phone || '',
       linkedin: data.linkedin || '',

@@ -40,18 +40,15 @@ export interface TeamMember {
   _id?: ObjectId;
   name: string;
   slug: string;
-  position: string;
-  bio: string;
+  role: string;
+  bio?: string;
+  image?: string;
   email?: string;
   phone?: string;
-  image?: string;
-  linkedIn?: string;
+  linkedin?: string;
   order: number;
-  status: 'active' | 'inactive';
-  publishStatus: 'draft' | 'published';
   createdAt: Date;
   updatedAt: Date;
-  createdBy: string;
 }
 
 // Service Model

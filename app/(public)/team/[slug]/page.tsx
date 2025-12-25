@@ -74,7 +74,7 @@ export default async function TeamMemberPage({
             <div>
               <h1 className="text-4xl md:text-5xl font-bold mb-2">{member.name}</h1>
               <p className="text-xl md:text-2xl text-blue-100">
-                {member.position}
+                {member.role}
               </p>
             </div>
           </div>
@@ -124,9 +124,9 @@ export default async function TeamMemberPage({
                       <span>{member.phone}</span>
                     </a>
                   )}
-                  {member.linkedIn && (
+                  {member.linkedin && (
                     <a 
-                      href={member.linkedIn}
+                      href={member.linkedin}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition-colors"

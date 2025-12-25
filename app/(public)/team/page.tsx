@@ -54,10 +54,10 @@ export default async function TeamPage() {
               >
                 <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
                   {/* Photo */}
-                  {member.photo ? (
+                  {member.image ? (
                     <div className="relative aspect-square bg-gray-100">
                       <Image
-                        src={member.photo}
+                        src={member.image}
                         alt={member.name}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -66,7 +66,7 @@ export default async function TeamPage() {
                   ) : (
                     <div className="aspect-square bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
                       <span className="text-white text-5xl font-bold">
-                        {member.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                        {member.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
                       </span>
                     </div>
                   )}
