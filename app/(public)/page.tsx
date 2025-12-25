@@ -215,36 +215,41 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Services Section */}
+      {/* Services Preview */}
       {services.length > 0 && (
         <section className="py-20 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">Our Services</h2>
-              <p className="text-xl text-gray-600">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Services</h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
                 Comprehensive precast solutions for renewable energy projects
               </p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {services.map((service) => (
-                <div key={service._id} className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                    {service.title}
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    {service.shortDescription}
-                  </p>
-                  <Link href={`/services/${service.slug}`} className="text-blue-600 font-medium hover:text-blue-700">
+                <div
+                  key={service._id}
+                  className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <h3 className="text-xl font-semibold mb-3">{service.title}</h3>
+                  <p className="text-gray-600 mb-4">{service.shortDescription}</p>
+                  <Link
+                    href={`/services/${service.slug}`}
+                    className="text-blue-600 font-medium hover:text-blue-700"
+                  >
                     Learn more →
                   </Link>
                 </div>
               ))}
             </div>
+
             <div className="text-center mt-12">
-              <Link href="/services">
-                <Button variant="outline" size="lg">
-                  View All Services
-                </Button>
+              <Link
+                href="/services"
+                className="inline-block border-2 border-gray-800 text-gray-800 px-8 py-3 rounded-lg font-semibold hover:bg-gray-800 hover:text-white transition-colors"
+              >
+                View All Services
               </Link>
             </div>
           </div>
