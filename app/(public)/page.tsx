@@ -42,12 +42,13 @@ async function getHomeData() {
       },
     };
     
-    // Get featured projects
+    // Get featured projects - ONLY PUBLISHED
     const projectsCollection = db.collection<Project>('projects');
     const featuredProjects = await projectsCollection
       .find({ 
         featured: true, 
-        status: { $in: ['in-progress' as const, 'completed' as const] }
+        status: { $in: ['in-progress' as const, 'completed' as const] },
+        publishStatus: 'published'
       })
       .sort({ order: 1, updatedAt: -1 })
       .limit(limit)

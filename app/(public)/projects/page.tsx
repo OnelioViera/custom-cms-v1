@@ -12,7 +12,7 @@ async function getProjects() {
     const projects = await projectsCollection
       .find({ 
         status: { $in: ['in-progress' as const, 'completed' as const] },
-        publishStatus: 'published'
+        publishStatus: 'published' // Add this filter
       })
       .sort({ order: 1, updatedAt: -1 })
       .toArray();

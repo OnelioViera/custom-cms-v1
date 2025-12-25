@@ -9,7 +9,7 @@ async function getTeamMembers() {
     const teamCollection = db.collection<TeamMember>('team');
     
     const members = await teamCollection
-      .find({ publishStatus: 'published' })
+      .find({ publishStatus: 'published' }) // Make sure this is here
       .sort({ order: 1 })
       .toArray();
 

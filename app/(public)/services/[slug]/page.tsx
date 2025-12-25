@@ -10,7 +10,11 @@ async function getService(slug: string) {
     const db = await getDatabase();
     const servicesCollection = db.collection<Service>('services');
     
-    const service = await servicesCollection.findOne({ slug, status: 'active' });
+    const service = await servicesCollection.findOne({ 
+      slug,
+      status: 'active',
+      publishStatus: 'published' // Add this filter
+    });
 
     if (!service) return null;
 

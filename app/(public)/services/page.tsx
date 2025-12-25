@@ -10,7 +10,7 @@ async function getServices() {
     const services = await servicesCollection
       .find({ 
         status: 'active',
-        publishStatus: 'published'
+        publishStatus: 'published' // Make sure this is here
       })
       .sort({ order: 1 })
       .toArray();
