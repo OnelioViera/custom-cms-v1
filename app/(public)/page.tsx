@@ -12,9 +12,17 @@ async function getHomeData() {
     // Get settings
     const settingsCollection = db.collection('settings');
     const settings = await settingsCollection.findOne({ _id: 'homepage-hero' as any });
-    const limit = settings?.featuredProjectsLimit || 3;
+    
+    // Only use settings if they're published, otherwise use defaults
+    const useSettings = settings?.status === 'published';
+    
+    console.log('Settings status:', settings?.status);
+    console.log('Using settings?', useSettings);
+    
+    const limit = useSettings ? (settings?.featuredProjectsLimit || 3) : 3;
+    
     // Default hero settings
-    const hero = settings?.hero || {
+    const defaultHero = {
       title: 'Building the Future of Renewable Energy Infrastructure',
       subtitle: 'Expert precast concrete solutions for utility-scale battery storage, solar installations, and critical infrastructure projects.',
       primaryButton: {
@@ -33,14 +41,17 @@ async function getHomeData() {
       },
       backgroundImage: '',
       backgroundVideo: '',
-      backgroundType: 'color',
+      backgroundType: 'color' as const,
       backgroundColor: '#1e40af',
       imageSettings: {
         opacity: 30,
-        position: 'center',
+        position: 'center' as const,
         scale: 100,
       },
     };
+    
+    // Use published settings or defaults
+    const hero = useSettings && settings?.hero ? settings.hero : defaultHero;
     
     // Get featured projects - ONLY PUBLISHED
     const projectsCollection = db.collection<Project>('projects');
@@ -54,7 +65,7 @@ async function getHomeData() {
       .limit(limit)
       .toArray();
 
-    // Get active services
+    // Get active services - ONLY PUBLISHED
     const servicesCollection = db.collection<Service>('services');
     const services = await servicesCollection
       .find({ 
@@ -107,11 +118,11 @@ async function getHomeData() {
         },
         backgroundImage: '',
         backgroundVideo: '',
-        backgroundType: 'color',
+        backgroundType: 'color' as const,
         backgroundColor: '#1e40af',
         imageSettings: {
           opacity: 30,
-          position: 'center',
+          position: 'center' as const,
           scale: 100,
         },
       },
