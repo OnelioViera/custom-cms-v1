@@ -195,18 +195,14 @@ export default function NewPagePage() {
           </div>
 
           {/* Content */}
-          <div className="space-y-2">
-            <Label htmlFor="content">
-              Content
-              <span className="text-red-500 ml-1">*</span>
-            </Label>
+          <div>
+            <Label htmlFor="content">Content</Label>
             <RichTextEditor
-              content={formData.content}
+              value={formData.content}
               onChange={(content) => handleFieldChange('content', content)}
-              placeholder="Start writing your page content..."
             />
             {errors.content && (
-              <p className="text-sm text-red-600 flex items-center gap-1">
+              <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
                 {errors.content}
               </p>
             )}

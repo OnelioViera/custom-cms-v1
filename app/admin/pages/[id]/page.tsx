@@ -170,12 +170,11 @@ export default function EditPagePage() {
           </div>
 
           {/* Content */}
-          <div className="space-y-2">
+          <div>
             <Label htmlFor="content">Content</Label>
             <RichTextEditor
-              content={formData.content}
+              value={formData.content}
               onChange={(content) => setFormData({ ...formData, content })}
-              placeholder="Start writing your page content..."
             />
           </div>
 
